@@ -1,9 +1,8 @@
 from datetime import datetime, timedelta
-from typing import List, Dict, Optional
+from app.database import drivers_collection, violations_collection
+from bson.objectid import ObjectId
 
-# --- 1. CONFIGURATION: 10 REAL VIOLATION TYPES ---
-# Weights: High=5, Medium=3, Low=2 [cite: 1032-1035]
-# Expiry: High=180, Medium=90, Low=60 days [cite: 1048-1051]
+# --- 1. CONFIGURATION ---
 VIOLATION_RULES = {
     "RED_LIGHT":       {"weight": 5, "expiry": 180, "label": "Red Light Violation"},
     "WHITE_LINE":      {"weight": 3, "expiry": 90,  "label": "Crossing White Line"},
@@ -17,53 +16,49 @@ VIOLATION_RULES = {
     "OBSTRUCTION":     {"weight": 2, "expiry": 60,  "label": "Traffic Obstruction"}
 }
 
-# --- IN-MEMORY DATABASE (Simulating DB) ---
-drivers_db = []     # Stores registered vehicles
-violations_db = []  # Stores violation events
-
 class PenaltyService:
 
-    # --- A. REGISTER VEHICLE (New Requirement) ---
+    # --- A. REGISTER VEHICLE ---
     def register_vehicle(self, plate_no: str, owner_name: str, vehicle_type: str):
-        # Check if already exists
-        for d in drivers_db:
-            if d["plate_no"] == plate_no:
-                return {"status": "error", "msg": "Vehicle already registered"}
+        existing = drivers_collection.find_one({"plate_no": plate_no})
+        if existing:
+            return {"status": "error", "msg": "Vehicle already registered"}
         
         new_driver = {
             "plate_no": plate_no,
             "name": owner_name,
             "vehicle_type": vehicle_type,
             "registered_at": datetime.now(),
-            "contributor_level": "Silver", # Default [cite: 1019]
+            "contributor_level": "Silver",
             "upload_count": 0
         }
-        drivers_db.append(new_driver)
+        
+        result = drivers_collection.insert_one(new_driver)
+        new_driver["_id"] = str(result.inserted_id)
         return {"status": "success", "driver": new_driver}
 
-    # --- B. ADD VIOLATION LOGIC ---
+    # --- B. ADD VIOLATION ---
     def add_violation(self, plate_no: str, violation_code: str):
-        # 1. Validate Code
         if violation_code not in VIOLATION_RULES:
             raise ValueError(f"Invalid Code: {violation_code}")
         
         rule = VIOLATION_RULES[violation_code]
         
-        # 2. Calculate Repeats (Multiplier Logic) [cite: 1037-1041]
-        user_history = [v for v in violations_db if v["plate_no"] == plate_no and v["type"] == violation_code]
-        count = len(user_history) + 1
+        count = violations_collection.count_documents({
+            "plate_no": plate_no, 
+            "type": violation_code
+        })
+        count += 1
         
         multiplier = 1.0
         if count == 2: multiplier = 1.25
         elif count == 3: multiplier = 1.5
         elif count >= 5: multiplier = 2.0
         
-        # 3. Calculate Points & Expiry
         points = rule["weight"] * multiplier
         expiry_date = datetime.now() + timedelta(days=rule["expiry"])
         
         new_event = {
-            "id": len(violations_db) + 1,
             "plate_no": plate_no,
             "type": violation_code,
             "label": rule["label"],
@@ -73,42 +68,40 @@ class PenaltyService:
             "timestamp": datetime.now(),
             "expiry_date": expiry_date
         }
-        violations_db.append(new_event)
+        
+        result = violations_collection.insert_one(new_event)
+        new_event["_id"] = str(result.inserted_id)
         return new_event
 
-    # --- C. GET SCORE & CHARTS DATA ---
+    # --- C. GET PROFILE ---
     def get_full_profile(self, plate_no: str):
-        # 1. Find Driver
-        driver = next((d for d in drivers_db if d["plate_no"] == plate_no), None)
+        driver = drivers_collection.find_one({"plate_no": plate_no})
         if not driver:
-            return None # Driver not found
-
-        # 2. Filter Violations for this driver
-        my_violations = [v for v in violations_db if v["plate_no"] == plate_no]
+            return None
         
-        # 3. Calculate Scores (Active vs Expired) [cite: 1057]
+        driver["_id"] = str(driver["_id"])
+
+        cursor = violations_collection.find({"plate_no": plate_no})
+        my_violations = list(cursor)
+        
         now = datetime.now()
         active_points = 0
         expired_points = 0
-        
-        timeline_data = {} # For Chart 1
-        type_counts = {}   # For Chart 2
+        timeline_data = {}
+        type_counts = {}
 
         for v in my_violations:
-            # Chart 1: Timeline (Group by Month)
-            month_key = v["timestamp"].strftime("%Y-%m") # e.g., "2025-08"
+            v["_id"] = str(v["_id"])
+            
+            month_key = v["timestamp"].strftime("%Y-%m")
             timeline_data[month_key] = timeline_data.get(month_key, 0) + 1
-
-            # Chart 2: Type Dist (Group by Label)
             type_counts[v["label"]] = type_counts.get(v["label"], 0) + 1
 
-            # Score Calculation
             if v["expiry_date"] > now:
                 active_points += v["points"]
             else:
                 expired_points += v["points"]
 
-        # 4. Risk Level [cite: 1026]
         risk = "Low"
         if active_points > 10: risk = "Moderate"
         if active_points > 20: risk = "High"
@@ -127,5 +120,5 @@ class PenaltyService:
                 "distribution": [{"type": k, "count": v} for k, v in type_counts.items()],
                 "points_split": [active_points, expired_points]
             },
-            "recent_history": my_violations[-5:] # Last 5 events
+            "recent_history": my_violations[-5:] 
         }
