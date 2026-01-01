@@ -37,13 +37,21 @@ class PenaltyService:
         new_driver["_id"] = str(result.inserted_id)
         return {"status": "success", "driver": new_driver}
 
-    # --- B. ADD VIOLATION ---
+    # --- B. ADD VIOLATION (UPDATED HERE) ---
     def add_violation(self, plate_no: str, violation_code: str):
+        # 1. SECURITY CHECK: Ensure Vehicle Exists [NEW ADDITION]
+        # If the driver is not in the database, stop immediately.
+        driver = drivers_collection.find_one({"plate_no": plate_no})
+        if not driver:
+            raise ValueError(f"Vehicle '{plate_no}' is NOT registered in the system.")
+
+        # 2. Validate Violation Code
         if violation_code not in VIOLATION_RULES:
             raise ValueError(f"Invalid Code: {violation_code}")
         
         rule = VIOLATION_RULES[violation_code]
         
+        # 3. Count Repeats (Multiplier Logic)
         count = violations_collection.count_documents({
             "plate_no": plate_no, 
             "type": violation_code

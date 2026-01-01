@@ -1,17 +1,22 @@
 import React, { useState } from 'react';
 import { Bar, Pie, Doughnut } from 'react-chartjs-2';
-import 'chart.js/auto'; // Auto-register charts
+import 'chart.js/auto'; 
 import RegisterForm from './RegisterForm';
+import ViolationForm from './ViolationForm';
 
 const PenaltyDashboard = () => {
+    // STATE: Controls which "Portal" we are seeing
+    const [viewMode, setViewMode] = useState('ADMIN'); // 'ADMIN' or 'USER'
+    
     const [searchPlate, setSearchPlate] = useState('');
     const [data, setData] = useState(null);
     const [error, setError] = useState('');
 
     const fetchProfile = async (plate) => {
+        if (!plate) return;
         try {
             const res = await fetch(`http://127.0.0.1:8000/api/penalty/user/${plate}/full_profile`);
-            if (!res.ok) throw new Error("Vehicle not found or not registered");
+            if (!res.ok) throw new Error("Vehicle not registered yet.");
             const result = await res.json();
             setData(result);
             setError('');
@@ -22,96 +27,152 @@ const PenaltyDashboard = () => {
     };
 
     return (
-        <div style={{ padding: '20px', fontFamily: 'Arial', background: '#1a1a1a', minHeight: '100vh', color: '#fff' }}>
-            <h1 style={{ textAlign: 'center', borderBottom: '1px solid #444', paddingBottom: '10px' }}>
-                GoodRoad: Intelligent Penalty Framework
-            </h1>
-
-            {/* 1. Registration Section */}
-            <RegisterForm onRegisterSuccess={(plate) => {
-                setSearchPlate(plate);
-                fetchProfile(plate);
-            }} />
-
-            {/* 2. Search Section */}
-            <div style={{ textAlign: 'center', margin: '20px 0' }}>
-                <input 
-                    style={{ padding: '10px', width: '300px' }}
-                    placeholder="Enter Plate Number to Search..." 
-                    value={searchPlate}
-                    onChange={(e) => setSearchPlate(e.target.value)}
-                />
-                <button 
-                    onClick={() => fetchProfile(searchPlate)}
-                    style={{ padding: '10px 20px', marginLeft: '10px', background: '#2196F3', color: 'white', border: 'none' }}
-                >
-                    Analyze Profile
-                </button>
+        <div style={{ fontFamily: 'Arial', background: '#1a1a1a', minHeight: '100vh', color: '#fff' }}>
+            
+            {/* 1. TOP NAVIGATION (Role Switcher) */}
+            <div style={{ background: '#000', padding: '15px 30px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '2px solid #333' }}>
+                <h2 style={{ margin: 0, color: '#fff' }}>GoodRoad <span style={{fontSize: '14px', color: '#888'}}>System V1.0</span></h2>
+                
+                <div style={{ display: 'flex', gap: '10px' }}>
+                    <button 
+                        onClick={() => setViewMode('ADMIN')}
+                        style={{ 
+                            padding: '10px 20px', 
+                            background: viewMode === 'ADMIN' ? '#c0392b' : '#333', 
+                            color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' 
+                        }}
+                    >
+                        👮 ADMIN PORTAL
+                    </button>
+                    <button 
+                        onClick={() => setViewMode('USER')}
+                        style={{ 
+                            padding: '10px 20px', 
+                            background: viewMode === 'USER' ? '#2980b9' : '#333', 
+                            color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' 
+                        }}
+                    >
+                        🚗 DRIVER PORTAL
+                    </button>
+                </div>
             </div>
 
-            {error && <div style={{ textAlign: 'center', color: '#ff4444' }}><h3>⚠️ {error}</h3></div>}
-
-            {/* 3. Dashboard Display */}
-            {data && (
-                <div>
-                    {/* Header Stats */}
-                    <div style={{ display: 'flex', justifyContent: 'space-around', background: '#333', padding: '20px', borderRadius: '10px' }}>
-                        <div>
-                            <h3>Vehicle: {data.profile.plate_no}</h3>
-                            <p>Owner: {data.profile.name}</p>
-                            <p>Type: {data.profile.vehicle_type}</p>
+            <div style={{ padding: '30px' }}>
+                
+                {/* --- VIEW 1: ADMIN PORTAL --- */}
+                {viewMode === 'ADMIN' && (
+                    <div style={{ animation: 'fadeIn 0.5s' }}>
+                        <div style={{ textAlign: 'center', marginBottom: '30px' }}>
+                            <h1 style={{color: '#e74c3c'}}>TRAFFIC ENFORCEMENT CENTER</h1>
+                            <p style={{color: '#aaa'}}>Authorized Access Only. Register vehicles and record manual violations.</p>
                         </div>
-                        <div style={{ textAlign: 'right' }}>
-                            <h2 style={{ color: data.stats.risk_level === 'High' ? 'red' : '#4CAF50' }}>
-                                Risk Level: {data.stats.risk_level}
-                            </h2>
-                            <p>Active Points: <strong>{data.stats.active_points}</strong></p>
-                            <p>Total Events: {data.stats.total_events}</p>
+
+                        <div style={{ display: 'flex', justifyContent: 'center', gap: '40px', flexWrap: 'wrap' }}>
+                            {/* Step 1: Register */}
+                            <div style={{ flex: '1', maxWidth: '500px' }}>
+                                <RegisterForm onRegisterSuccess={(plate) => {
+                                    alert(`Vehicle ${plate} Registered! Now you can record violations.`);
+                                }} />
+                            </div>
+
+                            {/* Step 2: Enforce */}
+                            <div style={{ flex: '1', maxWidth: '500px' }}>
+                                <ViolationForm activePlate={null} /> 
+                                {/* Passed null so admin has to type the plate manually, mimicking real life */}
+                            </div>
                         </div>
                     </div>
+                )}
 
-                    {/* Charts Section */}
-                    <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-around', marginTop: '30px' }}>
-                        
-                        {/* Chart 1: Timeline */}
-                        <div style={{ width: '45%', background: '#2d2d2d', padding: '15px', marginBottom: '20px', borderRadius: '8px' }}>
-                            <h4 style={{textAlign: 'center'}}>Violation Timeline</h4>
-                            <Bar data={{
-                                labels: data.charts.timeline.map(x => x.month),
-                                datasets: [{
-                                    label: 'Violations per Month',
-                                    data: data.charts.timeline.map(x => x.count),
-                                    backgroundColor: '#36A2EB'
-                                }]
-                            }} />
+                {/* --- VIEW 2: USER PORTAL --- */}
+                {viewMode === 'USER' && (
+                    <div style={{ animation: 'fadeIn 0.5s' }}>
+                         <div style={{ textAlign: 'center', marginBottom: '30px' }}>
+                            <h1 style={{color: '#3498db'}}>DRIVER DASHBOARD</h1>
+                            <p style={{color: '#aaa'}}>Check your penalty points and risk status.</p>
                         </div>
 
-                        {/* Chart 2: Type Distribution */}
-                        <div style={{ width: '30%', background: '#2d2d2d', padding: '15px', marginBottom: '20px', borderRadius: '8px' }}>
-                            <h4 style={{textAlign: 'center'}}>Violation Types</h4>
-                            <Pie data={{
-                                labels: data.charts.distribution.map(x => x.type),
-                                datasets: [{
-                                    data: data.charts.distribution.map(x => x.count),
-                                    backgroundColor: ['#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF']
-                                }]
-                            }} />
+                        {/* Search Bar */}
+                        <div style={{ textAlign: 'center', marginBottom: '40px' }}>
+                            <input 
+                                style={{ padding: '15px', width: '350px', fontSize: '16px', borderRadius: '30px', border: 'none', outline: 'none' }}
+                                placeholder="Enter Your Plate Number (e.g. WP-1111)" 
+                                value={searchPlate}
+                                onChange={(e) => setSearchPlate(e.target.value)}
+                            />
+                            <button 
+                                onClick={() => fetchProfile(searchPlate)}
+                                style={{ padding: '15px 30px', marginLeft: '10px', background: '#2980b9', color: 'white', border: 'none', borderRadius: '30px', cursor: 'pointer', fontSize: '16px', fontWeight: 'bold' }}
+                            >
+                                CHECK STATUS
+                            </button>
                         </div>
 
-                        {/* Chart 3: Active vs Expired */}
-                        <div style={{ width: '20%', background: '#2d2d2d', padding: '15px', marginBottom: '20px', borderRadius: '8px' }}>
-                            <h4 style={{textAlign: 'center'}}>Points Status</h4>
-                            <Doughnut data={{
-                                labels: ['Active Points', 'Expired Points'],
-                                datasets: [{
-                                    data: data.charts.points_split,
-                                    backgroundColor: ['#FF4444', '#888888']
-                                }]
-                            }} />
-                        </div>
+                        {error && <div style={{ textAlign: 'center', color: '#ff4444' }}><h3>⚠️ {error}</h3></div>}
+
+                        {/* Data Display */}
+                        {data && (
+                            <div>
+                                {/* Header Card */}
+                                <div style={{ display: 'flex', justifyContent: 'space-between', background: '#333', padding: '30px', borderRadius: '15px', alignItems: 'center', maxWidth: '1000px', margin: '0 auto' }}>
+                                    <div>
+                                        <h1 style={{ margin: 0, fontSize: '3em' }}>{data.profile.plate_no}</h1>
+                                        <p style={{ color: '#aaa', margin: '5px 0' }}>Owner: {data.profile.name} | Type: {data.profile.vehicle_type}</p>
+                                    </div>
+                                    <div style={{ textAlign: 'right' }}>
+                                        <div style={{ 
+                                            fontSize: '24px', 
+                                            padding: '10px 20px',
+                                            borderRadius: '8px',
+                                            background: data.stats.risk_level === 'High' ? 'rgba(231, 76, 60, 0.2)' : 'rgba(46, 204, 113, 0.2)',
+                                            color: data.stats.risk_level === 'High' ? '#e74c3c' : '#2ecc71',
+                                            border: data.stats.risk_level === 'High' ? '1px solid #e74c3c' : '1px solid #2ecc71'
+                                        }}>
+                                            RISK: <strong>{data.stats.risk_level}</strong>
+                                        </div>
+                                        <div style={{marginTop: '10px', fontSize: '18px'}}>Active Points: <strong>{data.stats.active_points}</strong></div>
+                                    </div>
+                                </div>
+
+                                {/* Charts Grid */}
+                                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '20px', marginTop: '40px', justifyContent: 'center' }}>
+                                    
+                                    <div style={{ width: '400px', background: '#252525', padding: '20px', borderRadius: '15px' }}>
+                                        <h4 style={{textAlign: 'center', margin: '0 0 20px 0', color: '#bbb'}}>Violation History</h4>
+                                        <div style={{ height: '250px' }}>
+                                            <Bar data={{
+                                                labels: data.charts.timeline.map(x => x.month),
+                                                datasets: [{ label: 'Events', data: data.charts.timeline.map(x => x.count), backgroundColor: '#3498db' }]
+                                            }} options={{ maintainAspectRatio: false }} />
+                                        </div>
+                                    </div>
+
+                                    <div style={{ width: '300px', background: '#252525', padding: '20px', borderRadius: '15px' }}>
+                                        <h4 style={{textAlign: 'center', margin: '0 0 20px 0', color: '#bbb'}}>Violation Types</h4>
+                                        <div style={{ height: '250px' }}>
+                                            <Pie data={{
+                                                labels: data.charts.distribution.map(x => x.type),
+                                                datasets: [{ data: data.charts.distribution.map(x => x.count), backgroundColor: ['#e74c3c', '#3498db', '#f1c40f', '#1abc9c', '#9b59b6'] }]
+                                            }} options={{ maintainAspectRatio: false }} />
+                                        </div>
+                                    </div>
+
+                                    <div style={{ width: '300px', background: '#252525', padding: '20px', borderRadius: '15px' }}>
+                                        <h4 style={{textAlign: 'center', margin: '0 0 20px 0', color: '#bbb'}}>Points Status</h4>
+                                        <div style={{ height: '250px' }}>
+                                            <Doughnut data={{
+                                                labels: ['Active', 'Expired'],
+                                                datasets: [{ data: data.charts.points_split, backgroundColor: ['#e74c3c', '#555'] }]
+                                            }} options={{ maintainAspectRatio: false }} />
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
                     </div>
-                </div>
-            )}
+                )}
+
+            </div>
         </div>
     );
 };
