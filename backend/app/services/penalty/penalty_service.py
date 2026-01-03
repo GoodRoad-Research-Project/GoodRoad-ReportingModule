@@ -18,8 +18,9 @@ VIOLATION_RULES = {
 
 class PenaltyService:
 
-    # --- A. REGISTER VEHICLE ---
-    def register_vehicle(self, plate_no: str, owner_name: str, vehicle_type: str):
+    # --- A. REGISTER VEHICLE (UPDATED) ---
+    # Update arguments to accept owner_email
+    def register_vehicle(self, plate_no: str, owner_name: str, owner_email: str, vehicle_type: str):
         existing = drivers_collection.find_one({"plate_no": plate_no})
         if existing:
             return {"status": "error", "msg": "Vehicle already registered"}
@@ -27,6 +28,7 @@ class PenaltyService:
         new_driver = {
             "plate_no": plate_no,
             "name": owner_name,
+            "email": owner_email, # Saving the email to MongoDB
             "vehicle_type": vehicle_type,
             "registered_at": datetime.now(),
             "contributor_level": "Silver",

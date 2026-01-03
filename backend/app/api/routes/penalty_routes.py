@@ -9,6 +9,7 @@ service = PenaltyService()
 class VehicleReg(BaseModel):
     plate_no: str
     owner_name: str
+    email: str
     vehicle_type: str
 
 class ViolationAdd(BaseModel):
@@ -18,7 +19,7 @@ class ViolationAdd(BaseModel):
 # 1. Register Vehicle Endpoint
 @router.post("/register")
 def register_vehicle(data: VehicleReg):
-    result = service.register_vehicle(data.plate_no, data.owner_name, data.vehicle_type)
+    result = service.register_vehicle(data.plate_no, data.owner_name, data.email, data.vehicle_type)
     if result["status"] == "error":
         raise HTTPException(status_code=400, detail=result["msg"])
     return result

@@ -1,21 +1,12 @@
 import React, { useState } from 'react';
 
 const RegisterForm = ({ onRegisterSuccess }) => {
-    const [formData, setFormData] = useState({ plate_no: '', owner_name: '', vehicle_type: 'Car' });
+    // Added 'email' to state
+    const [formData, setFormData] = useState({ plate_no: '', owner_name: '', email: '', vehicle_type: 'Car' });
     const [msg, setMsg] = useState('');
     const [isSuccess, setIsSuccess] = useState(false);
 
-    // Extended Vehicle List
-    const VEHICLE_TYPES = [
-        "Car",
-        "Motorcycle",
-        "Three-Wheeler",
-        "Dual Purpose (Van/Jeep)",
-        "Lorry",
-        "Bus",
-        "Land Vehicle (Tractor)",
-        "Other"
-    ];
+    const VEHICLE_TYPES = ["Car", "Motorcycle", "Three-Wheeler", "Dual Purpose (Van/Jeep)", "Lorry", "Bus", "Land Vehicle (Tractor)", "Other"];
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -30,7 +21,7 @@ const RegisterForm = ({ onRegisterSuccess }) => {
                 setIsSuccess(true);
                 setMsg('✅ Vehicle Registered Successfully!');
                 onRegisterSuccess(formData.plate_no);
-                setFormData({ plate_no: '', owner_name: '', vehicle_type: 'Car' }); // Reset form
+                setFormData({ plate_no: '', owner_name: '', email: '', vehicle_type: 'Car' }); 
             } else {
                 setIsSuccess(false);
                 setMsg('❌ Error: ' + data.detail);
@@ -64,7 +55,16 @@ const RegisterForm = ({ onRegisterSuccess }) => {
                     style={{ padding: '10px', borderRadius: '4px', border: 'none' }}
                 />
                 
-                {/* Enhanced Dropdown */}
+                {/* NEW EMAIL FIELD */}
+                <input 
+                    type="email"
+                    placeholder="Owner Email (e.g. driver@gmail.com)" 
+                    value={formData.email}
+                    onChange={(e) => setFormData({...formData, email: e.target.value})}
+                    required
+                    style={{ padding: '10px', borderRadius: '4px', border: 'none' }}
+                />
+                
                 <select 
                     value={formData.vehicle_type}
                     onChange={(e) => setFormData({...formData, vehicle_type: e.target.value})}
