@@ -1,8 +1,9 @@
 import os
 import google.generativeai as genai
+from datetime import datetime # <--- ADDED THIS IMPORT
 
 # --- CONFIGURATION ---
-# Your Google Key (from your code snippet)
+# Your Google Key
 os.environ["GEMINI_API_KEY"] = "AIzaSyAlPLTHOx5cRsTJAiXtrMWrauf6yz_X92U"
 
 genai.configure(api_key=os.environ.get("GEMINI_API_KEY"))
@@ -10,9 +11,11 @@ genai.configure(api_key=os.environ.get("GEMINI_API_KEY"))
 def generate_violation_email(driver_name, driver_email, plate_no, violation_label, points, expiry_date):
     """
     Generates a personalized warning email using Google Gemini AI.
-    Includes error handling and model auto-discovery.
     """
     
+    # Get the current time for the violation timestamp
+    current_time = datetime.now()
+
     # 1. The Prompt
     prompt = f"""
     You are the 'GoodRoad Traffic Enforcement AI'.
@@ -22,7 +25,10 @@ def generate_violation_email(driver_name, driver_email, plate_no, violation_labe
     Driver Name: {driver_name}
     Vehicle No: {plate_no}
     Violation Type: {violation_label}
-    Date/Time: {expiry_date.strftime("%Y-%m-%d %H:%M")}
+    
+    # --- FIXED LINE BELOW (Uses current_time instead of expiry_date) ---
+    Date/Time: {current_time.strftime("%Y-%m-%d %H:%M")} (Violation Time)
+    
     Added Points: {points}
     Expiry Date: {expiry_date.strftime("%Y-%m-%d")}
     
@@ -37,16 +43,15 @@ def generate_violation_email(driver_name, driver_email, plate_no, violation_labe
 
     try:
         # 2. AUTO-DISCOVERY: Find a working model
-        # This asks Google: "What models are available for this key?"
         available_models = []
         for m in genai.list_models():
             if 'generateContent' in m.supported_generation_methods:
                 available_models.append(m.name)
         
-        # Pick the best available model
-        model_name = 'models/gemini-1.5-flash' # Default preference
+        # Default preference
+        model_name = 'models/gemini-1.5-flash' 
         
-        # If default isn't there, try to find a 'flash' or 'pro' model
+        # Fallback logic
         if model_name not in available_models:
             for m in available_models:
                 if 'flash' in m:
@@ -56,11 +61,10 @@ def generate_violation_email(driver_name, driver_email, plate_no, violation_labe
                     model_name = m
                     break
             else:
-                # If all else fails, take the first available one
                 if available_models:
                     model_name = available_models[0]
         
-        print(f"Using AI Model: {model_name}") # This will print in your terminal so you know it works
+        print(f"Using AI Model: {model_name}")
 
         # 3. Call the Model
         model = genai.GenerativeModel(model_name)

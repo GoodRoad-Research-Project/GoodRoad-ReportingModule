@@ -1,3 +1,4 @@
+import emailjs from '@emailjs/browser';
 import React, { useState } from 'react';
 import { Bar, Pie, Doughnut } from 'react-chartjs-2';
 import 'chart.js/auto'; 
@@ -24,6 +25,30 @@ const PenaltyDashboard = () => {
             setError(err.message);
             setData(null);
         }
+    };
+
+    // --- NEW: EMAIL SENDING FUNCTION ---
+    const sendEmailNotification = (record) => {
+        if (!record || !record.generated_email) return;
+
+        // The data we are sending to EmailJS
+        const templateParams = {
+            violation_type: record.label, // Matches {{violation_type}} in template
+            message: record.generated_email, // Matches {{message}} in template
+            to_email: data.profile.email // Sends to the registered user's email
+        };
+
+        emailjs.send(
+            'service_13e19ua',      // Service ID
+            'template_mrx7rmt',     // Template ID
+            templateParams,
+            'BzEUIZa3dJ_2FvOSO'     // Public Key
+        )
+        .then((response) => {
+           alert('✅ Email successfully sent to ' + data.profile.email);
+        }, (err) => {
+           alert('❌ Failed to send: ' + JSON.stringify(err));
+        });
     };
 
     return (
@@ -168,7 +193,7 @@ const PenaltyDashboard = () => {
                                     </div>
                                 </div>
 
-                                {/* AI EMAIL NOTIFICATION CARD (ADDED HERE) */}
+                                {/* AI EMAIL NOTIFICATION CARD */}
                                 <div style={{ marginTop: '30px', maxWidth: '800px', margin: '30px auto', background: '#fff', color: '#333', borderRadius: '8px', overflow: 'hidden' }}>
                                     <div style={{ background: '#ea4335', padding: '15px', color: 'white', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                         <h3 style={{ margin: 0 }}>📩 Latest Violation Notification</h3>
@@ -190,7 +215,11 @@ const PenaltyDashboard = () => {
                                     </div>
                                     
                                     <div style={{ background: '#f5f5f5', padding: '10px 25px', borderTop: '1px solid #ddd', textAlign: 'right' }}>
-                                        <button style={{ background: '#4285f4', color: 'white', border: 'none', padding: '8px 15px', borderRadius: '4px', cursor: 'pointer' }} onClick={() => alert("Email Sent to User!")}>
+                                        {/* UPDATED BUTTON TO CALL EMAILJS */}
+                                        <button 
+                                            style={{ background: '#4285f4', color: 'white', border: 'none', padding: '8px 15px', borderRadius: '4px', cursor: 'pointer' }} 
+                                            onClick={() => sendEmailNotification(data.recent_history[data.recent_history.length - 1])}
+                                        >
                                             Resend Email 🚀
                                         </button>
                                     </div>
