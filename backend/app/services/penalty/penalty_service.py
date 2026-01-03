@@ -1,3 +1,4 @@
+from app.services.ai.ai_service import generate_violation_email # <--- NEW IMPORT
 from datetime import datetime, timedelta
 from app.database import drivers_collection, violations_collection
 from bson.objectid import ObjectId
@@ -18,8 +19,7 @@ VIOLATION_RULES = {
 
 class PenaltyService:
 
-    # --- A. REGISTER VEHICLE (UPDATED) ---
-    # Update arguments to accept owner_email
+    # --- A. REGISTER VEHICLE ---
     def register_vehicle(self, plate_no: str, owner_name: str, owner_email: str, vehicle_type: str):
         existing = drivers_collection.find_one({"plate_no": plate_no})
         if existing:
@@ -39,10 +39,9 @@ class PenaltyService:
         new_driver["_id"] = str(result.inserted_id)
         return {"status": "success", "driver": new_driver}
 
-    # --- B. ADD VIOLATION (UPDATED HERE) ---
+    # --- B. ADD VIOLATION ---
     def add_violation(self, plate_no: str, violation_code: str):
-        # 1. SECURITY CHECK: Ensure Vehicle Exists [NEW ADDITION]
-        # If the driver is not in the database, stop immediately.
+        # 1. SECURITY CHECK: Ensure Vehicle Exists
         driver = drivers_collection.find_one({"plate_no": plate_no})
         if not driver:
             raise ValueError(f"Vehicle '{plate_no}' is NOT registered in the system.")
@@ -81,6 +80,30 @@ class PenaltyService:
         
         result = violations_collection.insert_one(new_event)
         new_event["_id"] = str(result.inserted_id)
+
+        # --- NEW: AI EMAIL GENERATION ---
+        # Fetch driver email to include in data (defaults to unknown if missing)
+        driver_email = driver.get("email", "unknown@email.com")
+        
+        # Call the AI Service
+        ai_email_text = generate_violation_email(
+            driver_name=driver["name"],
+            driver_email=driver_email,
+            plate_no=plate_no,
+            violation_label=rule["label"],
+            points=points,
+            expiry_date=expiry_date
+        )
+
+        # Save the generated email back to the database violation record
+        violations_collection.update_one(
+            {"_id": result.inserted_id},
+            {"$set": {"generated_email": ai_email_text}}
+        )
+        
+        # Add to return object so frontend sees it immediately
+        new_event["generated_email"] = ai_email_text
+        
         return new_event
 
     # --- C. GET PROFILE ---
