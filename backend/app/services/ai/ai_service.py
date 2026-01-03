@@ -1,21 +1,19 @@
 import os
-from groq import Groq
+import google.generativeai as genai
 
 # --- CONFIGURATION ---
-# 1. Get your FREE key from https://console.groq.com/keys
-os.environ["GROQ_API_KEY"] = "gsk_..." # <--- PASTE YOUR KEY INSIDE THESE QUOTES
+# Your Google Key (from your code snippet)
+os.environ["GEMINI_API_KEY"] = "AIzaSyAlPLTHOx5cRsTJAiXtrMWrauf6yz_X92U"
 
-client = Groq(
-    api_key=os.environ.get("GROQ_API_KEY"),
-)
+genai.configure(api_key=os.environ.get("GEMINI_API_KEY"))
 
 def generate_violation_email(driver_name, driver_email, plate_no, violation_label, points, expiry_date):
     """
-    Generates a personalized warning email using Llama-3 AI.
-    Inputs match the sketch: Name, Violation Type, Points, Expiry.
+    Generates a personalized warning email using Google Gemini AI.
+    Includes error handling and model auto-discovery.
     """
     
-    # 1. The Prompt Template (Based on your friend's sketch)
+    # 1. The Prompt
     prompt = f"""
     You are the 'GoodRoad Traffic Enforcement AI'.
     Write a formal email body to a driver.
@@ -24,29 +22,51 @@ def generate_violation_email(driver_name, driver_email, plate_no, violation_labe
     Driver Name: {driver_name}
     Vehicle No: {plate_no}
     Violation Type: {violation_label}
-    Date/Time: {expiry_date.strftime("%Y-%m-%d %H:%M")} (Violation Time)
+    Date/Time: {expiry_date.strftime("%Y-%m-%d %H:%M")}
     Added Points: {points}
     Expiry Date: {expiry_date.strftime("%Y-%m-%d")}
     
     --- INSTRUCTIONS ---
     1. Start with "Dear {driver_name},"
     2. State clearly that a violation was detected.
-    3. Mention the specific violation and the penalty points added.
-    4. Mention when these points will expire.
-    5. Add a short educational safety tip related to {violation_label}.
-    6. End with "Safe Driving, GoodRoad Enforcement Team".
-    7. Keep it professional and concise.
+    3. Mention the penalty points and expiry.
+    4. Add a safety tip related to {violation_label}.
+    5. End with "Safe Driving, GoodRoad Enforcement Team".
+    6. Keep it professional and concise.
     """
 
     try:
-        # 2. Call the AI Model
-        completion = client.chat.completions.create(
-            messages=[
-                {"role": "system", "content": "You are a helpful traffic safety assistant."},
-                {"role": "user", "content": prompt}
-            ],
-            model="llama3-8b-8192",
-        )
-        return completion.choices[0].message.content
+        # 2. AUTO-DISCOVERY: Find a working model
+        # This asks Google: "What models are available for this key?"
+        available_models = []
+        for m in genai.list_models():
+            if 'generateContent' in m.supported_generation_methods:
+                available_models.append(m.name)
+        
+        # Pick the best available model
+        model_name = 'models/gemini-1.5-flash' # Default preference
+        
+        # If default isn't there, try to find a 'flash' or 'pro' model
+        if model_name not in available_models:
+            for m in available_models:
+                if 'flash' in m:
+                    model_name = m
+                    break
+                elif 'pro' in m:
+                    model_name = m
+                    break
+            else:
+                # If all else fails, take the first available one
+                if available_models:
+                    model_name = available_models[0]
+        
+        print(f"Using AI Model: {model_name}") # This will print in your terminal so you know it works
+
+        # 3. Call the Model
+        model = genai.GenerativeModel(model_name)
+        response = model.generate_content(prompt)
+        return response.text
+
     except Exception as e:
+        print(f"AI Error: {e}")
         return f"Error generating email: {str(e)}"

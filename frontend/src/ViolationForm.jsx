@@ -14,13 +14,12 @@ const VIOLATION_TYPES = [
 ];
 
 const ViolationForm = ({ activePlate, onViolationAdded }) => {
-    // If activePlate is provided (User View), use it. If not (Admin View), allow typing.
     const [plate, setPlate] = useState(activePlate || '');
     const [type, setType] = useState(VIOLATION_TYPES[0].code);
     const [msg, setMsg] = useState('');
     const [isSuccess, setIsSuccess] = useState(false);
+    const [isSubmitting, setIsSubmitting] = useState(false); // NEW: Loading State
 
-    // Update state if the prop changes
     useEffect(() => {
         if (activePlate) {
             setPlate(activePlate);
@@ -29,14 +28,15 @@ const ViolationForm = ({ activePlate, onViolationAdded }) => {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        
-        // Use the manually typed plate OR the active prop
         const targetPlate = plate; 
 
         if (!targetPlate) {
             setMsg("⚠️ Please enter a vehicle plate number");
             return;
         }
+
+        setIsSubmitting(true); // LOCK BUTTON
+        setMsg("⏳ Processing Violation & Generating AI Email..."); // Show status
 
         try {
             const response = await fetch('http://127.0.0.1:8000/api/penalty/add', {
@@ -49,10 +49,8 @@ const ViolationForm = ({ activePlate, onViolationAdded }) => {
             
             if (response.ok) {
                 setIsSuccess(true);
-                setMsg(`VIOLATION RECORDED. Points: ${data.points} | Multiplier Applied: ${data.multiplier}x`);
+                setMsg(`✅ SUCCESS! Points: ${data.points} | Email Generated!`);
                 if (onViolationAdded) onViolationAdded(targetPlate);
-                
-                // If manual mode, optionally clear the field after success
                 if (!activePlate) setPlate(''); 
             } else {
                 setIsSuccess(false);
@@ -63,7 +61,8 @@ const ViolationForm = ({ activePlate, onViolationAdded }) => {
             setMsg('SYSTEM ERROR: Connection Failed');
         }
         
-        setTimeout(() => setMsg(''), 4000);
+        setIsSubmitting(false); // UNLOCK BUTTON
+        setTimeout(() => setMsg(''), 5000);
     };
 
     return (
@@ -74,29 +73,17 @@ const ViolationForm = ({ activePlate, onViolationAdded }) => {
             </div>
 
             <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
-                
-                {/* Context Info OR Input Field */}
                 <div style={{ background: '#34495e', padding: '10px', borderRadius: '4px', fontSize: '14px' }}>
                     <div style={{ color: '#bdc3c7', marginBottom: '5px' }}>Target Vehicle:</div>
-                    
                     {activePlate ? (
-                        // CASE 1: Locked (User/Context View)
                         <strong style={{ color: '#f1c40f', fontSize: '16px' }}>{activePlate}</strong>
                     ) : (
-                        // CASE 2: Manual Input (Admin View) - THIS WAS MISSING
                         <input 
                             placeholder="Type Plate No (e.g. WP-9999)"
                             value={plate}
                             onChange={(e) => setPlate(e.target.value)}
-                            style={{ 
-                                width: '90%', 
-                                padding: '8px', 
-                                borderRadius: '4px', 
-                                border: '1px solid #7f8c8d',
-                                background: '#ecf0f1',
-                                color: '#2c3e50',
-                                fontWeight: 'bold'
-                            }}
+                            disabled={isSubmitting} // Disable while loading
+                            style={{ width: '90%', padding: '8px', borderRadius: '4px', border: '1px solid #7f8c8d', background: '#ecf0f1', color: '#2c3e50', fontWeight: 'bold' }}
                         />
                     )}
                 </div>
@@ -106,6 +93,7 @@ const ViolationForm = ({ activePlate, onViolationAdded }) => {
                     <select 
                         value={type} 
                         onChange={(e) => setType(e.target.value)}
+                        disabled={isSubmitting} // Disable while loading
                         style={{ width: '100%', padding: '10px', background: '#ecf0f1', color: '#2c3e50', border: 'none', borderRadius: '4px', fontWeight: 'bold' }}
                     >
                         {VIOLATION_TYPES.map(v => (
@@ -116,35 +104,25 @@ const ViolationForm = ({ activePlate, onViolationAdded }) => {
 
                 <button 
                     type="submit" 
-                    disabled={!plate} // Now checks the local 'plate' variable
+                    disabled={!plate || isSubmitting} // Disable if empty OR loading
                     style={{ 
                         padding: '12px', 
-                        background: plate ? '#c0392b' : '#95a5a6', 
+                        background: isSubmitting ? '#7f8c8d' : (plate ? '#c0392b' : '#95a5a6'), 
                         color: 'white', 
                         border: 'none', 
                         borderRadius: '4px',
-                        cursor: plate ? 'pointer' : 'not-allowed',
+                        cursor: (plate && !isSubmitting) ? 'pointer' : 'not-allowed',
                         fontWeight: 'bold',
                         letterSpacing: '1px',
                         transition: 'background 0.3s'
                     }}
                 >
-                    SUBMIT VIOLATION REPORT
+                    {isSubmitting ? "PROCESSING AI..." : "SUBMIT VIOLATION REPORT"}
                 </button>
             </form>
 
-            {/* Status Message Area */}
             {msg && (
-                <div style={{ 
-                    marginTop: '15px', 
-                    padding: '10px', 
-                    background: isSuccess ? '#27ae60' : '#c0392b', 
-                    color: 'white', 
-                    fontSize: '13px', 
-                    borderRadius: '4px',
-                    fontWeight: 'bold',
-                    textAlign: 'center'
-                }}>
+                <div style={{ marginTop: '15px', padding: '10px', background: isSuccess ? '#27ae60' : (isSubmitting ? '#f39c12' : '#c0392b'), color: 'white', fontSize: '13px', borderRadius: '4px', fontWeight: 'bold', textAlign: 'center' }}>
                     {msg}
                 </div>
             )}

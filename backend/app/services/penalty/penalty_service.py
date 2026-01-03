@@ -1,4 +1,4 @@
-from app.services.ai.ai_service import generate_violation_email # <--- NEW IMPORT
+from app.services.ai.ai_service import generate_violation_email
 from datetime import datetime, timedelta
 from app.database import drivers_collection, violations_collection
 from bson.objectid import ObjectId
