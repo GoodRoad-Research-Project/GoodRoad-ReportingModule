@@ -2,7 +2,6 @@ import emailjs from '@emailjs/browser';
 import React, { useState } from 'react';
 import { Bar, Pie, Doughnut } from 'react-chartjs-2';
 import 'chart.js/auto'; 
-import RegisterForm from './RegisterForm';
 import ViolationForm from './ViolationForm';
 
 const PenaltyDashboard = () => {
@@ -89,21 +88,13 @@ const PenaltyDashboard = () => {
                     <div style={{ animation: 'fadeIn 0.5s' }}>
                         <div style={{ textAlign: 'center', marginBottom: '30px' }}>
                             <h1 style={{color: '#e74c3c'}}>TRAFFIC ENFORCEMENT CENTER</h1>
-                            <p style={{color: '#aaa'}}>Authorized Access Only. Register vehicles and record manual violations.</p>
+                            <p style={{color: '#aaa'}}>Authorized Access Only. Record traffic violations for registered vehicles.</p>
                         </div>
 
                         <div style={{ display: 'flex', justifyContent: 'center', gap: '40px', flexWrap: 'wrap' }}>
-                            {/* Step 1: Register */}
-                            <div style={{ flex: '1', maxWidth: '500px' }}>
-                                <RegisterForm onRegisterSuccess={(plate) => {
-                                    alert(`Vehicle ${plate} Registered! Now you can record violations.`);
-                                }} />
-                            </div>
-
-                            {/* Step 2: Enforce */}
-                            <div style={{ flex: '1', maxWidth: '500px' }}>
+                            {/* Violation Entry Form */}
+                            <div style={{ flex: '1', maxWidth: '550px' }}>
                                 <ViolationForm activePlate={null} /> 
-                                {/* Passed null so admin has to type the plate manually, mimicking real life */}
                             </div>
                         </div>
                     </div>

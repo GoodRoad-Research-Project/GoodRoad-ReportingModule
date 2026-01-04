@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import emailjs from '@emailjs/browser'; // <--- IMPORT EMAILJS
+import emailjs from '@emailjs/browser';
 
 const VIOLATION_TYPES = [
     { code: "RED_LIGHT", label: "Red Light Violation (Medium)" },
@@ -20,6 +20,9 @@ const ViolationForm = ({ activePlate, onViolationAdded }) => {
     const [msg, setMsg] = useState('');
     const [isSuccess, setIsSuccess] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [penaltySplit, setPenaltySplit] = useState(null);
+    const [emailStatus, setEmailStatus] = useState(null); // Track email sending status
+    const [violationData, setViolationData] = useState(null); // Store violation data for email
 
     useEffect(() => {
         if (activePlate) {
@@ -27,33 +30,54 @@ const ViolationForm = ({ activePlate, onViolationAdded }) => {
         }
     }, [activePlate]);
 
-    // --- NEW: FUNCTION TO SEND EMAIL IMMEDIATELY ---
+    // Function to send email notification
     const sendInstantEmail = (violationData) => {
-        // Prepare data for EmailJS
-        // Note: The backend must return 'driver_email' and 'generated_email' in the response
-        // If your backend doesn't return driver_email, we might need a quick fix, 
-        // but let's try assuming the backend sends the generated text.
-        
-        if (!violationData.generated_email) return;
+        if (!violationData.generated_email || !violationData.driver_email) {
+            console.error("Missing email data from backend");
+            setEmailStatus({ success: false, message: "Missing email data" });
+            return Promise.reject("Missing email data");
+        }
 
         const templateParams = {
             violation_type: violationData.label,
             message: violationData.generated_email,
-            to_email: violationData.driver_email // We need to ensure backend sends this back!
+            to_email: violationData.driver_email
         };
 
-        emailjs.send(
-            'service_13e19ua',      // YOUR Service ID
-            'template_mrx7rmt',     // YOUR Template ID
+        return emailjs.send(
+            'service_13e19ua',
+            'template_mrx7rmt',
             templateParams,
-            'BzEUIZa3dJ_2FvOSO'     // YOUR Public Key
+            'BzEUIZa3dJ_2FvOSO'
         )
         .then(() => {
-            console.log("Email Auto-Sent!");
+            console.log("Email sent successfully to: " + violationData.driver_email);
+            setEmailStatus({ 
+                success: true, 
+                message: `Email successfully sent to ${violationData.driver_email}`,
+                email: violationData.driver_email
+            });
+            return true;
         })
         .catch((err) => {
-            console.error("Auto-Email Failed:", err);
+            console.error("Email sending failed:", err);
+            setEmailStatus({ 
+                success: false, 
+                message: `Failed to send email: ${err.text || 'Unknown error'}`,
+                email: violationData.driver_email
+            });
+            return false;
         });
+    };
+
+    // Calculate penalty split (Government 60%, Reward 25%, System 15%)
+    const calculatePenaltySplit = (totalPenalty) => {
+        return {
+            government: (totalPenalty * 0.60).toFixed(2),
+            reward: (totalPenalty * 0.25).toFixed(2),
+            system: (totalPenalty * 0.15).toFixed(2),
+            total: totalPenalty.toFixed(2)
+        };
     };
 
     const handleSubmit = async (e) => {
@@ -79,11 +103,20 @@ const ViolationForm = ({ activePlate, onViolationAdded }) => {
             
             if (response.ok) {
                 setIsSuccess(true);
-                setMsg(`✅ SUCCESS! Points: ${data.points} | Email Sent to Driver!`);
+                setEmailStatus(null); // Reset email status
                 
-                // --- TRIGGER EMAIL IMMEDIATELY ---
-                // We pass the data we just got from the backend to EmailJS
-                sendInstantEmail(data);
+                // Calculate penalty split based on points
+                const penaltyAmount = data.points * 500; // Base penalty calculation (500 LKR per point)
+                const split = calculatePenaltySplit(penaltyAmount);
+                setPenaltySplit(split);
+                setViolationData(data); // Store data for email sending
+                
+                setMsg(`✅ SUCCESS! Points: ${data.points} | Sending email to: ${data.driver_email}...`);
+                
+                // Send email notification after a brief delay to show penalty split first
+                setTimeout(() => {
+                    sendInstantEmail(data);
+                }, 500);
 
                 if (onViolationAdded) onViolationAdded(targetPlate);
                 if (!activePlate) setPlate(''); 
@@ -104,7 +137,7 @@ const ViolationForm = ({ activePlate, onViolationAdded }) => {
         <div style={{ background: '#2c3e50', padding: '20px', borderRadius: '8px', color: 'white', border: '1px solid #34495e', boxShadow: '0 4px 6px rgba(0,0,0,0.3)' }}>
             <div style={{ display: 'flex', alignItems: 'center', marginBottom: '15px', borderBottom: '1px solid #7f8c8d', paddingBottom: '10px' }}>
                 <span style={{ fontSize: '20px', marginRight: '10px' }}>👮</span>
-                <h4 style={{ margin: 0, fontWeight: '600', color: '#ecf0f1' }}>MANUAL ENFORCEMENT ENTRY</h4>
+                <h4 style={{ margin: 0, fontWeight: '600', color: '#ecf0f1' }}>ENFORCEMENT ENTRY</h4>
             </div>
 
             <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
@@ -159,6 +192,64 @@ const ViolationForm = ({ activePlate, onViolationAdded }) => {
             {msg && (
                 <div style={{ marginTop: '15px', padding: '10px', background: isSuccess ? '#27ae60' : (isSubmitting ? '#f39c12' : '#c0392b'), color: 'white', fontSize: '13px', borderRadius: '4px', fontWeight: 'bold', textAlign: 'center' }}>
                     {msg}
+                </div>
+            )}
+
+            {/* Penalty Split Display */}
+            {penaltySplit && isSuccess && (
+                <div style={{ marginTop: '20px', background: '#34495e', padding: '15px', borderRadius: '8px' }}>
+                    <h5 style={{ margin: '0 0 15px 0', color: '#ecf0f1', borderBottom: '1px solid #7f8c8d', paddingBottom: '10px' }}>💰 Penalty Distribution (LKR {penaltySplit.total})</h5>
+                    
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#2980b9', padding: '10px', borderRadius: '4px' }}>
+                            <span>🏛️ Government (60%)</span>
+                            <strong>LKR {penaltySplit.government}</strong>
+                        </div>
+                        
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#27ae60', padding: '10px', borderRadius: '4px' }}>
+                            <span>🎁 Reward Pool (25%)</span>
+                            <strong>LKR {penaltySplit.reward}</strong>
+                        </div>
+                        
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#8e44ad', padding: '10px', borderRadius: '4px' }}>
+                            <span>⚙️ System (15%)</span>
+                            <strong>LKR {penaltySplit.system}</strong>
+                        </div>
+                    </div>
+                    
+                    <p style={{ fontSize: '11px', color: '#bdc3c7', marginTop: '10px', textAlign: 'center' }}>
+                        Penalty collected supports road safety initiatives
+                    </p>
+                </div>
+            )}
+
+            {/* Email Status Popup */}
+            {emailStatus && (
+                <div style={{ 
+                    marginTop: '15px', 
+                    padding: '15px', 
+                    background: emailStatus.success ? '#27ae60' : '#e74c3c', 
+                    borderRadius: '8px',
+                    border: emailStatus.success ? '2px solid #2ecc71' : '2px solid #c0392b'
+                }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <span style={{ fontSize: '24px' }}>{emailStatus.success ? '📧✅' : '📧❌'}</span>
+                        <div>
+                            <div style={{ fontWeight: 'bold', fontSize: '14px' }}>
+                                {emailStatus.success ? 'EMAIL SENT SUCCESSFULLY!' : 'EMAIL SENDING FAILED'}
+                            </div>
+                            <div style={{ fontSize: '12px', marginTop: '5px', opacity: 0.9 }}>
+                                {emailStatus.message}
+                            </div>
+                        </div>
+                    </div>
+                    {emailStatus.success && violationData && (
+                        <div style={{ marginTop: '10px', padding: '10px', background: 'rgba(0,0,0,0.2)', borderRadius: '4px', fontSize: '12px' }}>
+                            <div><strong>To:</strong> {violationData.driver_email}</div>
+                            <div><strong>Subject:</strong> Traffic Violation Notice - {violationData.label}</div>
+                            <div><strong>Status:</strong> Delivered ✓</div>
+                        </div>
+                    )}
                 </div>
             )}
         </div>

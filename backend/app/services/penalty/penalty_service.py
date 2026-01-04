@@ -101,9 +101,19 @@ class PenaltyService:
             {"$set": {"generated_email": ai_email_text}}
         )
         
+        # Calculate penalty split (Government 60%, Reward 25%, System 15%)
+        penalty_amount = points * 500  # Base penalty calculation (500 LKR per point)
+        penalty_split = {
+            "government": round(penalty_amount * 0.60, 2),
+            "reward": round(penalty_amount * 0.25, 2),
+            "system": round(penalty_amount * 0.15, 2),
+            "total": round(penalty_amount, 2)
+        }
+        
         # Add to return object so frontend sees it immediately
         new_event["generated_email"] = ai_email_text
         new_event["driver_email"] = driver_email
+        new_event["penalty_split"] = penalty_split
         
         return new_event
 

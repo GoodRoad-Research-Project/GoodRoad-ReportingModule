@@ -1,16 +1,45 @@
 import os
 import google.generativeai as genai
-from datetime import datetime # <--- ADDED THIS IMPORT
+from datetime import datetime
 
 # --- CONFIGURATION ---
-# Your Google Key
-os.environ["GEMINI_API_KEY"] = "AIzaSyBm1IR2ZeuenwVIfeklH_IgSUuBtXca9Mo"
+# IMPORTANT: Replace with your NEW API key from https://aistudio.google.com/app/apikey
+# The previous key was flagged as leaked. Generate a new one!
+GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "YOUR_NEW_API_KEY_HERE")
 
-genai.configure(api_key=os.environ.get("GEMINI_API_KEY"))
+genai.configure(api_key=GEMINI_API_KEY)
+
+def generate_fallback_email(driver_name, plate_no, violation_label, points, expiry_date):
+    """
+    Generates a fallback email template when AI service is unavailable.
+    """
+    current_time = datetime.now()
+    return f"""Dear {driver_name},
+
+This is an official notification from the GoodRoad Traffic Enforcement System.
+
+VIOLATION NOTICE
+================
+Vehicle Number: {plate_no}
+Violation Type: {violation_label}
+Date/Time: {current_time.strftime("%Y-%m-%d %H:%M")}
+Penalty Points Added: {points}
+Points Expiry Date: {expiry_date.strftime("%Y-%m-%d")}
+
+Please note that these penalty points have been added to your driving record. Accumulated points may affect your driving privileges.
+
+We urge you to follow traffic rules and drive responsibly for your safety and the safety of others on the road.
+
+For any queries, please contact the Road Development Authority.
+
+Safe Driving,
+GoodRoad Enforcement Team
+"""
 
 def generate_violation_email(driver_name, driver_email, plate_no, violation_label, points, expiry_date):
     """
     Generates a personalized warning email using Google Gemini AI.
+    Falls back to template if AI is unavailable.
     """
     
     # Get the current time for the violation timestamp
@@ -73,4 +102,6 @@ def generate_violation_email(driver_name, driver_email, plate_no, violation_labe
 
     except Exception as e:
         print(f"AI Error: {e}")
-        return f"Error generating email: {str(e)}"
+        print("Using fallback email template...")
+        # Return fallback template instead of error message
+        return generate_fallback_email(driver_name, plate_no, violation_label, points, expiry_date)
