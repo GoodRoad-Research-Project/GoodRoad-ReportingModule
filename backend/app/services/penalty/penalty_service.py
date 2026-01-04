@@ -103,6 +103,7 @@ class PenaltyService:
         
         # Add to return object so frontend sees it immediately
         new_event["generated_email"] = ai_email_text
+        new_event["driver_email"] = driver_email
         
         return new_event
 

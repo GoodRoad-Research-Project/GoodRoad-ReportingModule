@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import emailjs from '@emailjs/browser'; // <--- IMPORT EMAILJS
 
 const VIOLATION_TYPES = [
     { code: "RED_LIGHT", label: "Red Light Violation (Medium)" },
@@ -18,13 +19,42 @@ const ViolationForm = ({ activePlate, onViolationAdded }) => {
     const [type, setType] = useState(VIOLATION_TYPES[0].code);
     const [msg, setMsg] = useState('');
     const [isSuccess, setIsSuccess] = useState(false);
-    const [isSubmitting, setIsSubmitting] = useState(false); // NEW: Loading State
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
     useEffect(() => {
         if (activePlate) {
             setPlate(activePlate);
         }
     }, [activePlate]);
+
+    // --- NEW: FUNCTION TO SEND EMAIL IMMEDIATELY ---
+    const sendInstantEmail = (violationData) => {
+        // Prepare data for EmailJS
+        // Note: The backend must return 'driver_email' and 'generated_email' in the response
+        // If your backend doesn't return driver_email, we might need a quick fix, 
+        // but let's try assuming the backend sends the generated text.
+        
+        if (!violationData.generated_email) return;
+
+        const templateParams = {
+            violation_type: violationData.label,
+            message: violationData.generated_email,
+            to_email: violationData.driver_email // We need to ensure backend sends this back!
+        };
+
+        emailjs.send(
+            'service_13e19ua',      // YOUR Service ID
+            'template_mrx7rmt',     // YOUR Template ID
+            templateParams,
+            'BzEUIZa3dJ_2FvOSO'     // YOUR Public Key
+        )
+        .then(() => {
+            console.log("Email Auto-Sent!");
+        })
+        .catch((err) => {
+            console.error("Auto-Email Failed:", err);
+        });
+    };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -35,8 +65,8 @@ const ViolationForm = ({ activePlate, onViolationAdded }) => {
             return;
         }
 
-        setIsSubmitting(true); // LOCK BUTTON
-        setMsg("⏳ Processing Violation & Generating AI Email..."); // Show status
+        setIsSubmitting(true); 
+        setMsg("⏳ Processing Violation & Generating AI Email..."); 
 
         try {
             const response = await fetch('http://127.0.0.1:8000/api/penalty/add', {
@@ -49,7 +79,12 @@ const ViolationForm = ({ activePlate, onViolationAdded }) => {
             
             if (response.ok) {
                 setIsSuccess(true);
-                setMsg(`✅ SUCCESS! Points: ${data.points} | Email Generated!`);
+                setMsg(`✅ SUCCESS! Points: ${data.points} | Email Sent to Driver!`);
+                
+                // --- TRIGGER EMAIL IMMEDIATELY ---
+                // We pass the data we just got from the backend to EmailJS
+                sendInstantEmail(data);
+
                 if (onViolationAdded) onViolationAdded(targetPlate);
                 if (!activePlate) setPlate(''); 
             } else {
@@ -61,7 +96,7 @@ const ViolationForm = ({ activePlate, onViolationAdded }) => {
             setMsg('SYSTEM ERROR: Connection Failed');
         }
         
-        setIsSubmitting(false); // UNLOCK BUTTON
+        setIsSubmitting(false); 
         setTimeout(() => setMsg(''), 5000);
     };
 
@@ -82,7 +117,7 @@ const ViolationForm = ({ activePlate, onViolationAdded }) => {
                             placeholder="Type Plate No (e.g. WP-9999)"
                             value={plate}
                             onChange={(e) => setPlate(e.target.value)}
-                            disabled={isSubmitting} // Disable while loading
+                            disabled={isSubmitting} 
                             style={{ width: '90%', padding: '8px', borderRadius: '4px', border: '1px solid #7f8c8d', background: '#ecf0f1', color: '#2c3e50', fontWeight: 'bold' }}
                         />
                     )}
@@ -93,7 +128,7 @@ const ViolationForm = ({ activePlate, onViolationAdded }) => {
                     <select 
                         value={type} 
                         onChange={(e) => setType(e.target.value)}
-                        disabled={isSubmitting} // Disable while loading
+                        disabled={isSubmitting} 
                         style={{ width: '100%', padding: '10px', background: '#ecf0f1', color: '#2c3e50', border: 'none', borderRadius: '4px', fontWeight: 'bold' }}
                     >
                         {VIOLATION_TYPES.map(v => (
@@ -104,7 +139,7 @@ const ViolationForm = ({ activePlate, onViolationAdded }) => {
 
                 <button 
                     type="submit" 
-                    disabled={!plate || isSubmitting} // Disable if empty OR loading
+                    disabled={!plate || isSubmitting} 
                     style={{ 
                         padding: '12px', 
                         background: isSubmitting ? '#7f8c8d' : (plate ? '#c0392b' : '#95a5a6'), 

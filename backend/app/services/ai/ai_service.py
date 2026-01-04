@@ -4,7 +4,7 @@ from datetime import datetime # <--- ADDED THIS IMPORT
 
 # --- CONFIGURATION ---
 # Your Google Key
-os.environ["GEMINI_API_KEY"] = "AIzaSyAlPLTHOx5cRsTJAiXtrMWrauf6yz_X92U"
+os.environ["GEMINI_API_KEY"] = "AIzaSyBm1IR2ZeuenwVIfeklH_IgSUuBtXca9Mo"
 
 genai.configure(api_key=os.environ.get("GEMINI_API_KEY"))
 
