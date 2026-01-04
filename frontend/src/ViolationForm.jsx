@@ -119,7 +119,7 @@ const ViolationForm = ({ activePlate, onViolationAdded }) => {
                 }, 500);
 
                 if (onViolationAdded) onViolationAdded(targetPlate);
-                if (!activePlate) setPlate(''); 
+                // Keep the plate number visible - don't clear it
             } else {
                 setIsSuccess(false);
                 setMsg('ERROR: ' + data.detail);

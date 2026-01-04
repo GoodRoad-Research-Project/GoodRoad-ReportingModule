@@ -1,6 +1,6 @@
 from app.services.ai.ai_service import generate_violation_email
 from datetime import datetime, timedelta
-from app.database import drivers_collection, violations_collection
+from app.database import drivers_collection, violations_collection, rewards_collection
 from bson.objectid import ObjectId
 
 # --- 1. CONFIGURATION ---
@@ -125,20 +125,25 @@ class PenaltyService:
         
         driver["_id"] = str(driver["_id"])
 
+        # Get violations
         cursor = violations_collection.find({"plate_no": plate_no})
         my_violations = list(cursor)
+        
+        # Get rewards (dashcam submissions)
+        rewards_cursor = rewards_collection.find({"plate_no": plate_no})
+        my_rewards = list(rewards_cursor)
         
         now = datetime.now()
         active_points = 0
         expired_points = 0
-        timeline_data = {}
+        penalty_timeline = {}
         type_counts = {}
 
         for v in my_violations:
             v["_id"] = str(v["_id"])
             
             month_key = v["timestamp"].strftime("%Y-%m")
-            timeline_data[month_key] = timeline_data.get(month_key, 0) + 1
+            penalty_timeline[month_key] = penalty_timeline.get(month_key, 0) + 1
             type_counts[v["label"]] = type_counts.get(v["label"], 0) + 1
 
             if v["expiry_date"] > now:
@@ -146,10 +151,31 @@ class PenaltyService:
             else:
                 expired_points += v["points"]
 
+        # Process rewards data
+        total_rewards = 0
+        reward_timeline = {}
+        reward_type_counts = {}
+        
+        for r in my_rewards:
+            r["_id"] = str(r["_id"])
+            total_rewards += r.get("amount", 0)
+            
+            month_key = r["timestamp"].strftime("%Y-%m")
+            reward_timeline[month_key] = reward_timeline.get(month_key, 0) + 1
+            
+            reward_type = r.get("violation_reported", "Other")
+            reward_type_counts[reward_type] = reward_type_counts.get(reward_type, 0) + 1
+
         risk = "Low"
         if active_points > 10: risk = "Moderate"
         if active_points > 20: risk = "High"
         if active_points > 30: risk = "Critical"
+        
+        # Determine contributor level based on rewards
+        contributor_level = "Bronze"
+        if len(my_rewards) >= 5: contributor_level = "Silver"
+        if len(my_rewards) >= 15: contributor_level = "Gold"
+        if len(my_rewards) >= 30: contributor_level = "Platinum"
 
         return {
             "profile": driver,
@@ -157,12 +183,18 @@ class PenaltyService:
                 "active_points": round(active_points, 2),
                 "expired_points": round(expired_points, 2),
                 "risk_level": risk,
-                "total_events": len(my_violations)
+                "total_violations": len(my_violations),
+                "total_rewards": round(total_rewards, 2),
+                "total_contributions": len(my_rewards),
+                "contributor_level": contributor_level
             },
             "charts": {
-                "timeline": [{"month": k, "count": v} for k, v in timeline_data.items()],
-                "distribution": [{"type": k, "count": v} for k, v in type_counts.items()],
+                "penalty_timeline": [{"month": k, "count": v} for k, v in penalty_timeline.items()],
+                "reward_timeline": [{"month": k, "count": v} for k, v in reward_timeline.items()],
+                "violation_types": [{"type": k, "count": v} for k, v in type_counts.items()],
+                "reward_types": [{"type": k, "count": v} for k, v in reward_type_counts.items()],
                 "points_split": [active_points, expired_points]
             },
-            "recent_history": my_violations[-5:] 
+            "recent_violations": my_violations[-5:],
+            "recent_rewards": my_rewards[-5:]
         }

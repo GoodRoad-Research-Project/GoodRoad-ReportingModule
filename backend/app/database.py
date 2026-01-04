@@ -10,5 +10,6 @@ db = client["goodroad"]
 # 3. Define our collections (like tables in SQL)
 drivers_collection = db["drivers"]
 violations_collection = db["violations"]
+rewards_collection = db["rewards"]  # For dashcam footage submissions
 
 print("Connected to MongoDB successfully!")
