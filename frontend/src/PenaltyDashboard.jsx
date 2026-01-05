@@ -7,10 +7,19 @@ import ViolationForm from './ViolationForm';
 const PenaltyDashboard = () => {
     // STATE: Controls which view we are seeing
     const [viewMode, setViewMode] = useState('ENFORCEMENT'); // 'ENFORCEMENT' or 'PROFILE'
+    const [sidebarOpen, setSidebarOpen] = useState(true);
     
     const [searchPlate, setSearchPlate] = useState('');
     const [data, setData] = useState(null);
     const [error, setError] = useState('');
+
+    // Menu items for sidebar - icons matching team's UI
+    const menuItems = [
+        { id: 'media', icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>, label: 'Media Authenticator', sublabel: 'Deepfake Detection' },
+        { id: 'vehicle', icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M7 17m-2 0a2 2 0 1 0 4 0a2 2 0 1 0 -4 0"/><path d="M17 17m-2 0a2 2 0 1 0 4 0a2 2 0 1 0 -4 0"/><path d="M5 17h-2v-6l2-5h9l4 5h1a2 2 0 0 1 2 2v4h-2m-4 0h-6m-6 -6h15m-6 0v-5"/></svg>, label: 'Vehicle Identification', sublabel: 'LPR & Tracking' },
+        { id: 'traffic', icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>, label: 'Traffic Surveillance', sublabel: 'Violation Detection' },
+        { id: 'incident', icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>, label: 'Incident Management', sublabel: 'Reporting Module', active: true },
+    ];
 
     const fetchProfile = async (plate) => {
         if (!plate) return;
@@ -51,80 +60,216 @@ const PenaltyDashboard = () => {
     };
 
     return (
-        <div style={{ fontFamily: 'Arial', background: '#1a1a1a', minHeight: '100vh', color: '#fff' }}>
+        <div style={{ fontFamily: 'Arial', background: '#0d1117', minHeight: '100vh', color: '#fff', display: 'flex' }}>
             
-            {/* 1. TOP NAVIGATION (Role Switcher) */}
-            <div style={{ background: '#000', padding: '15px 30px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '2px solid #333' }}>
-                <h2 style={{ margin: 0, color: '#fff' }}>GoodRoad <span style={{fontSize: '14px', color: '#888'}}>System V1.0</span></h2>
-                
-                <div style={{ display: 'flex', gap: '10px' }}>
-                    <button 
-                        onClick={() => setViewMode('ENFORCEMENT')}
-                        style={{ 
-                            padding: '10px 20px', 
-                            background: viewMode === 'ENFORCEMENT' ? '#c0392b' : '#333', 
-                            color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' 
-                        }}
-                    >
-                        🚦 ENFORCEMENT
-                    </button>
-                    <button 
-                        onClick={() => setViewMode('PROFILE')}
-                        style={{ 
-                            padding: '10px 20px', 
-                            background: viewMode === 'PROFILE' ? '#2980b9' : '#333', 
-                            color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' 
-                        }}
-                    >
-                        🚗 DRIVER PROFILE
-                    </button>
+            {/* SIDEBAR */}
+            <div style={{ 
+                width: sidebarOpen ? '200px' : '0px', 
+                background: '#161b22', 
+                borderRight: '1px solid #30363d',
+                display: 'flex',
+                flexDirection: 'column',
+                transition: 'width 0.3s',
+                overflow: 'hidden'
+            }}>
+                {/* Logo */}
+                <div style={{ padding: '20px', borderBottom: '1px solid #30363d', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <div style={{ width: '32px', height: '32px', background: '#3b82f6', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold' }}>G</div>
+                    <div>
+                        <div style={{ fontWeight: 'bold', color: '#fff' }}>GoodRoad</div>
+                        <div style={{ fontSize: '10px', color: '#7d8590' }}>ADMIN CONSOLE</div>
+                    </div>
+                </div>
+
+                {/* Menu Items */}
+                <div style={{ flex: 1, padding: '10px 0' }}>
+                    {menuItems.map((item) => (
+                        <div 
+                            key={item.id}
+                            style={{ 
+                                padding: '12px 20px', 
+                                display: 'flex', 
+                                alignItems: 'center', 
+                                gap: '12px',
+                                cursor: 'pointer',
+                                background: item.active ? 'rgba(59, 130, 246, 0.1)' : 'transparent',
+                                borderLeft: item.active ? '3px solid #3b82f6' : '3px solid transparent',
+                                color: item.active ? '#3b82f6' : '#7d8590'
+                            }}
+                        >
+                            <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{item.icon}</span>
+                            <div>
+                                <div style={{ fontSize: '13px', fontWeight: item.active ? '600' : '400' }}>{item.label}</div>
+                                <div style={{ fontSize: '10px', opacity: 0.7 }}>{item.sublabel}</div>
+                            </div>
+                            {item.active && <span style={{ marginLeft: 'auto', width: '6px', height: '6px', background: '#3b82f6', borderRadius: '50%' }}></span>}
+                        </div>
+                    ))}
+                </div>
+
+                {/* Close Menu */}
+                <div 
+                    onClick={() => setSidebarOpen(false)}
+                    style={{ padding: '15px 20px', borderTop: '1px solid #30363d', cursor: 'pointer', color: '#7d8590', fontSize: '13px' }}
+                >
+                    Close Menu
                 </div>
             </div>
 
-            <div style={{ padding: '30px' }}>
+            {/* MAIN CONTENT AREA */}
+            <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
                 
-                {/* --- VIEW 1: ENFORCEMENT --- */}
-                {viewMode === 'ENFORCEMENT' && (
-                    <div style={{ animation: 'fadeIn 0.5s' }}>
-                        <div style={{ textAlign: 'center', marginBottom: '30px' }}>
-                            <h1 style={{color: '#e74c3c'}}>TRAFFIC ENFORCEMENT CENTER</h1>
-                            <p style={{color: '#aaa'}}>Record traffic violations for registered vehicles.</p>
-                        </div>
+                {/* TOP HEADER */}
+                <div style={{ 
+                    background: '#161b22', 
+                    padding: '12px 24px', 
+                    display: 'flex', 
+                    justifyContent: 'space-between', 
+                    alignItems: 'center', 
+                    borderBottom: '1px solid #30363d' 
+                }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        {!sidebarOpen && (
+                            <button 
+                                onClick={() => setSidebarOpen(true)}
+                                style={{ background: 'none', border: 'none', color: '#7d8590', cursor: 'pointer', fontSize: '18px', marginRight: '10px' }}
+                            >
+                                ☰
+                            </button>
+                        )}
+                        <span style={{ color: '#fff', fontWeight: '500' }}>Incident Management</span>
+                        <span style={{ color: '#7d8590' }}>&gt;</span>
+                        <span style={{ color: '#7d8590' }}>Reporting Module</span>
+                    </div>
+                    
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
+                        <button style={{ background: 'none', border: 'none', color: '#7d8590', cursor: 'pointer', display: 'flex', alignItems: 'center' }}>
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                <circle cx="12" cy="12" r="3"/>
+                                <path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>
+                            </svg>
+                        </button>
+                        {/* Divider */}
+                        <div style={{ width: '1px', height: '20px', background: '#30363d' }}></div>
+                        <button style={{ 
+                            background: 'none', 
+                            border: 'none', 
+                            color: '#f85149', 
+                            cursor: 'pointer', 
+                            display: 'flex', 
+                            alignItems: 'center', 
+                            gap: '6px',
+                            fontSize: '13px'
+                        }}>
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+                                <polyline points="16 17 21 12 16 7"/>
+                                <line x1="21" y1="12" x2="9" y2="12"/>
+                            </svg>
+                            Sign Out
+                        </button>
+                    </div>
+                </div>
 
-                        <div style={{ display: 'flex', justifyContent: 'center', gap: '40px', flexWrap: 'wrap' }}>
-                            {/* Violation Entry Form */}
-                            <div style={{ flex: '1', maxWidth: '550px' }}>
-                                <ViolationForm activePlate={null} /> 
+                {/* PAGE CONTENT */}
+                <div style={{ flex: 1, padding: '30px', overflowY: 'auto' }}>
+                    
+                    {/* Page Title */}
+                    <div style={{ marginBottom: '25px' }}>
+                        <h1 style={{ margin: 0, fontSize: '24px', color: '#fff', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" strokeWidth="2">
+                                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                                <polyline points="14 2 14 8 20 8"/>
+                                <line x1="16" y1="13" x2="8" y2="13"/>
+                                <line x1="16" y1="17" x2="8" y2="17"/>
+                                <polyline points="10 9 9 9 8 9"/>
+                            </svg>
+                            Incident Management
+                        </h1>
+                        <p style={{ margin: '5px 0 0 0', color: '#7d8590', fontSize: '14px' }}>
+                            Manage vehicle registries, penalties, and view comprehensive driver profiles.
+                        </p>
+                    </div>
+
+                    {/* Tab Navigation */}
+                    <div style={{ display: 'flex', gap: '10px', marginBottom: '30px' }}>
+                        <button 
+                            onClick={() => setViewMode('PROFILE')}
+                            style={{ 
+                                padding: '10px 20px', 
+                                background: viewMode === 'PROFILE' ? 'transparent' : 'transparent',
+                                color: viewMode === 'PROFILE' ? '#fff' : '#7d8590', 
+                                border: '1px solid #30363d',
+                                borderRadius: '6px', 
+                                cursor: 'pointer', 
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '8px',
+                                fontSize: '13px'
+                            }}
+                        >
+                            🔍 Dashboard Search
+                        </button>
+                        <button 
+                            onClick={() => setViewMode('ENFORCEMENT')}
+                            style={{ 
+                                padding: '10px 20px', 
+                                background: viewMode === 'ENFORCEMENT' ? '#3b82f6' : 'transparent',
+                                color: '#fff', 
+                                border: viewMode === 'ENFORCEMENT' ? 'none' : '1px solid #30363d',
+                                borderRadius: '6px', 
+                                cursor: 'pointer',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '8px',
+                                fontSize: '13px'
+                            }}
+                        >
+                            ⚠️ Add Violation
+                        </button>
+                    </div>
+                
+                    {/* --- VIEW 1: ENFORCEMENT --- */}
+                    {viewMode === 'ENFORCEMENT' && (
+                        <div style={{ animation: 'fadeIn 0.5s' }}>
+                            <div style={{ display: 'flex', justifyContent: 'center', gap: '40px', flexWrap: 'wrap' }}>
+                                {/* Violation Entry Form */}
+                                <div style={{ flex: '1', maxWidth: '550px' }}>
+                                    <ViolationForm activePlate={null} /> 
+                                </div>
                             </div>
                         </div>
-                    </div>
-                )}
+                    )}
 
-                {/* --- VIEW 2: DRIVER PROFILE --- */}
-                {viewMode === 'PROFILE' && (
-                    <div style={{ animation: 'fadeIn 0.5s' }}>
-                         <div style={{ textAlign: 'center', marginBottom: '30px' }}>
-                            <h1 style={{color: '#3498db'}}>DRIVER PROFILE</h1>
-                            <p style={{color: '#aaa'}}>Analyze your penalty points, violation history and risk status.</p>
-                        </div>
+                    {/* --- VIEW 2: DRIVER PROFILE --- */}
+                    {viewMode === 'PROFILE' && (
+                        <div style={{ animation: 'fadeIn 0.5s' }}>
+                            {/* Search Bar */}
+                            <div style={{ textAlign: 'center', marginBottom: '40px' }}>
+                                <input 
+                                    style={{ 
+                                        padding: '15px', 
+                                        width: '350px', 
+                                        fontSize: '16px', 
+                                        borderRadius: '8px', 
+                                        border: '1px solid #30363d',
+                                        background: '#0d1117',
+                                        color: '#fff',
+                                        outline: 'none'
+                                    }}
+                                    placeholder="Enter Your Plate Number (e.g. WP-1111)" 
+                                    value={searchPlate}
+                                    onChange={(e) => setSearchPlate(e.target.value)}
+                                />
+                                <button 
+                                    onClick={() => fetchProfile(searchPlate)}
+                                    style={{ padding: '15px 30px', marginLeft: '10px', background: '#3b82f6', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontSize: '16px', fontWeight: 'bold' }}
+                                >
+                                    CHECK STATUS
+                                </button>
+                            </div>
 
-                        {/* Search Bar */}
-                        <div style={{ textAlign: 'center', marginBottom: '40px' }}>
-                            <input 
-                                style={{ padding: '15px', width: '350px', fontSize: '16px', borderRadius: '30px', border: 'none', outline: 'none' }}
-                                placeholder="Enter Your Plate Number (e.g. WP-1111)" 
-                                value={searchPlate}
-                                onChange={(e) => setSearchPlate(e.target.value)}
-                            />
-                            <button 
-                                onClick={() => fetchProfile(searchPlate)}
-                                style={{ padding: '15px 30px', marginLeft: '10px', background: '#2980b9', color: 'white', border: 'none', borderRadius: '30px', cursor: 'pointer', fontSize: '16px', fontWeight: 'bold' }}
-                            >
-                                CHECK STATUS
-                            </button>
-                        </div>
-
-                        {error && <div style={{ textAlign: 'center', color: '#ff4444' }}><h3>⚠️ {error}</h3></div>}
+                            {error && <div style={{ textAlign: 'center', color: '#f85149' }}><h3>⚠️ {error}</h3></div>}
 
                         {/* Data Display */}
                         {data && (
@@ -302,6 +447,7 @@ const PenaltyDashboard = () => {
                     </div>
                 )}
 
+                </div>
             </div>
         </div>
     );
