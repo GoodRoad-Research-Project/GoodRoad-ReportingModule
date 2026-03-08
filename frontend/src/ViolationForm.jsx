@@ -65,10 +65,10 @@ const ViolationForm = ({ activePlate, onViolationAdded }) => {
         };
 
         return emailjs.send(
-            'service_13e19ua',
-            'template_mrx7rmt',
+            process.env.REACT_APP_EMAILJS_SERVICE_ID,
+            process.env.REACT_APP_EMAILJS_TEMPLATE_ID,
             templateParams,
-            'BzEUIZa3dJ_2FvOSO'
+            process.env.REACT_APP_EMAILJS_PUBLIC_KEY
         )
         .then(() => {
             console.log("Email sent successfully to: " + violationData.driver_email);

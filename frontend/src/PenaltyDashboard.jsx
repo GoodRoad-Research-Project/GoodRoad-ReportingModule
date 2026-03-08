@@ -50,10 +50,10 @@ const PenaltyDashboard = () => {
         };
 
         emailjs.send(
-            'service_13e19ua',      // Service ID
-            'template_mrx7rmt',     // Template ID
+            process.env.REACT_APP_EMAILJS_SERVICE_ID,
+            process.env.REACT_APP_EMAILJS_TEMPLATE_ID,
             templateParams,
-            'BzEUIZa3dJ_2FvOSO'     // Public Key
+            process.env.REACT_APP_EMAILJS_PUBLIC_KEY
         )
         .then((response) => {
            alert('✅ Email successfully sent to ' + data.profile.email);
