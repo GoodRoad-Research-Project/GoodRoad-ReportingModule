@@ -1,48 +1,107 @@
 from app.services.ai.ai_service import generate_violation_email
 from datetime import datetime, timedelta
-from app.database import drivers_collection, violations_collection, rewards_collection
-from bson.objectid import ObjectId
+from sqlalchemy.orm import Session
+from sqlalchemy import func
+from app.models import Driver, Violation, Reward
 
 # --- 1. CONFIGURATION ---
 VIOLATION_RULES = {
-    "RED_LIGHT":       {"weight": 5, "expiry": 180, "label": "Red Light Violation"},
-    "WHITE_LINE":      {"weight": 3, "expiry": 90,  "label": "Crossing White Line"},
-    "WRONG_OVERTAKE":  {"weight": 5, "expiry": 180, "label": "Wrong Side Overtake"},
-    "PEDESTRIAN":      {"weight": 5, "expiry": 180, "label": "Pedestrian Crossing"},
-    "MOTO_OVERLOAD":   {"weight": 3, "expiry": 90,  "label": "Motorcycle Overload"},
-    "NO_HELMET":       {"weight": 5, "expiry": 180, "label": "No Helmet"},
-    "3WHEEL_OVERLOAD": {"weight": 3, "expiry": 90,  "label": "Three-Wheel Overload"},
-    "NO_SIGNAL":       {"weight": 2, "expiry": 60,  "label": "No Turn Signal"},
-    "RAILWAY":         {"weight": 5, "expiry": 180, "label": "Railway Violation"},
-    "OBSTRUCTION":     {"weight": 2, "expiry": 60,  "label": "Traffic Obstruction"}
+    "OVER_SPEED":          {"weight": 4, "expiry": 120, "label": "Excessive Speeding"},
+    "NO_LICENSE":         {"weight": 8, "expiry": 365, "label": "Driving Without a Valid Driving License"},
+    "NO_INSURANCE":       {"weight": 10, "expiry": 365, "label": "Driving Without a Valid Insurance Cover"},
+    "NO_REVENUE_LIC":     {"weight": 6, "expiry": 180, "label": "Failing to Carry or Display Valid Revenue License"},
+    "UNDERAGE_DRIVE":     {"weight": 10, "expiry": 365, "label": "Driving by an Underaged Person"},
+    "RECKLESS_DRIVING":   {"weight": 9, "expiry": 365, "label": "Reckless or Dangerous Driving"},
+    "CARELESS_DRIVING":   {"weight": 5, "expiry": 180, "label": "Driving Carelessly or Without Due Regard"},
+    "MOBILE_PHONE":       {"weight": 5, "expiry": 180, "label": "Using a Mobile Phone While Driving"},
+    "LEFT_OVERTAKE":      {"weight": 6, "expiry": 180, "label": "Overtaking from the Left"},
+    "NO_SEATBELT":        {"weight": 3, "expiry": 90, "label": "Failing to Wear a Seatbelt"},
+    "NO_HELMET":          {"weight": 5, "expiry": 180, "label": "Riding a Motorcycle Without a Helmet"},
+    "RED_LIGHT":          {"weight": 6, "expiry": 180, "label": "Disobeying Traffic Light Signals"},
+    "DISOBEY_POLICE":     {"weight": 7, "expiry": 270, "label": "Disobeying Police Officer Signals"},
+    "DISOBEY_SIGNS":      {"weight": 4, "expiry": 120, "label": "Disobeying Standard Traffic Signs"},
+    "WHITE_LINE":         {"weight": 4, "expiry": 120, "label": "Crossing the Solid White Line"},
+    "WRONG_PARKING":      {"weight": 2, "expiry": 60, "label": "Illegal or Wrong Parking"},
+    "PEDESTRIAN_CROSS":   {"weight": 6, "expiry": 180, "label": "Failure to Yield at a Pedestrian Crossing"},
+    "ONE_WAY":            {"weight": 7, "expiry": 270, "label": "Driving Against One-Way Traffic"},
+    "RAILWAY_CROSS":      {"weight": 8, "expiry": 365, "label": "Haphazard Railway Crossing"},
+    "OVERLOAD_PASS":      {"weight": 4, "expiry": 120, "label": "Carrying Excess Passengers"},
+    "DANGEROUS_LOAD":     {"weight": 5, "expiry": 150, "label": "Carrying an Improperly Secured or Dangerous Load"},
+    "EMISSION_FAIL":      {"weight": 3, "expiry": 90, "label": "Vehicle Emission Limit Violation"},
+    "SHRILL_HORN":        {"weight": 2, "expiry": 60, "label": "Use of Prohibited or Shrill Horn"},
+    "DEFECTIVE_LIGHTS":   {"weight": 3, "expiry": 90, "label": "Driving with Defective Headlights or Taillights"},
+    "UNFIT_VEHICLE":      {"weight": 5, "expiry": 150, "label": "Driving a Mechanically Defective Vehicle"},
+    "OBSCURED_PLATES":    {"weight": 4, "expiry": 120, "label": "Driving with Unclear or Obscured Identification Plates"},
+    "ROAD_OBSTRUCT":      {"weight": 3, "expiry": 90, "label": "Causing Unnecessary Obstruction on the Road"},
+    "ILLEGAL_REVERSE":    {"weight": 3, "expiry": 90, "label": "Reversing a Vehicle an Unreasonable Distance"},
+    "NO_FITNESS_CERT":    {"weight": 6, "expiry": 180, "label": "Driving a Commercial Vehicle Without a Fitness Certificate"},
+    "BLOCK_EMERGENCY":    {"weight": 8, "expiry": 270, "label": "Failing to Yield to an Emergency Vehicle"}
 }
 
 class PenaltyService:
 
     # --- A. REGISTER VEHICLE ---
-    def register_vehicle(self, plate_no: str, owner_name: str, owner_email: str, vehicle_type: str):
-        existing = drivers_collection.find_one({"plate_no": plate_no})
+    def register_vehicle(self, db: Session, plate_no: str, owner_name: str, owner_email: str, vehicle_type: str):
+        # Check if vehicle already exists
+        existing = db.query(Driver).filter(Driver.plate_no == plate_no).first()
         if existing:
             return {"status": "error", "msg": "Vehicle already registered"}
         
-        new_driver = {
-            "plate_no": plate_no,
-            "name": owner_name,
-            "email": owner_email, # Saving the email to MongoDB
-            "vehicle_type": vehicle_type,
-            "registered_at": datetime.now(),
-            "contributor_level": "Silver",
-            "upload_count": 0
-        }
+        # Create new driver record
+        new_driver = Driver(
+            plate_no=plate_no,
+            name=owner_name,
+            email=owner_email,
+            vehicle_type=vehicle_type,
+            registered_at=datetime.now(),
+            contributor_level="Silver",
+            upload_count=0
+        )
         
-        result = drivers_collection.insert_one(new_driver)
-        new_driver["_id"] = str(result.inserted_id)
-        return {"status": "success", "driver": new_driver}
+        db.add(new_driver)
+        db.commit()
+        db.refresh(new_driver)
+        
+        return {
+            "status": "success", 
+            "driver": {
+                "id": new_driver.id,
+                "plate_no": new_driver.plate_no,
+                "name": new_driver.name,
+                "email": new_driver.email,
+                "vehicle_type": new_driver.vehicle_type,
+                "registered_at": new_driver.registered_at.isoformat(),
+                "contributor_level": new_driver.contributor_level,
+                "upload_count": new_driver.upload_count
+            }
+        }
 
-    # --- B. ADD VIOLATION ---
-    def add_violation(self, plate_no: str, violation_code: str):
+    # --- B. DELETE VEHICLE ---
+    def delete_vehicle(self, db: Session, plate_no: str):
+        # Find the vehicle
+        driver = db.query(Driver).filter(Driver.plate_no == plate_no).first()
+        if not driver:
+            return {"status": "error", "msg": "Vehicle not found"}
+        
+        # Delete all associated violations
+        db.query(Violation).filter(Violation.plate_no == plate_no).delete()
+        
+        # Delete all associated rewards
+        db.query(Reward).filter(Reward.plate_no == plate_no).delete()
+        
+        # Delete the driver record
+        db.delete(driver)
+        db.commit()
+        
+        return {
+            "status": "success",
+            "msg": f"Vehicle {plate_no} and all associated records deleted successfully"
+        }
+
+    # --- C. ADD VIOLATION ---
+    def add_violation(self, db: Session, plate_no: str, violation_code: str):
         # 1. SECURITY CHECK: Ensure Vehicle Exists
-        driver = drivers_collection.find_one({"plate_no": plate_no})
+        driver = db.query(Driver).filter(Driver.plate_no == plate_no).first()
         if not driver:
             raise ValueError(f"Vehicle '{plate_no}' is NOT registered in the system.")
 
@@ -53,10 +112,10 @@ class PenaltyService:
         rule = VIOLATION_RULES[violation_code]
         
         # 3. Count Repeats (Multiplier Logic)
-        count = violations_collection.count_documents({
-            "plate_no": plate_no, 
-            "type": violation_code
-        })
+        count = db.query(Violation).filter(
+            Violation.plate_no == plate_no,
+            Violation.type == violation_code
+        ).count()
         count += 1
         
         multiplier = 1.0
@@ -67,27 +126,28 @@ class PenaltyService:
         points = rule["weight"] * multiplier
         expiry_date = datetime.now() + timedelta(days=rule["expiry"])
         
-        new_event = {
-            "plate_no": plate_no,
-            "type": violation_code,
-            "label": rule["label"],
-            "weight": rule["weight"],
-            "multiplier": multiplier,
-            "points": points,
-            "timestamp": datetime.now(),
-            "expiry_date": expiry_date
-        }
+        # Create new violation record
+        new_violation = Violation(
+            plate_no=plate_no,
+            type=violation_code,
+            label=rule["label"],
+            weight=rule["weight"],
+            multiplier=multiplier,
+            points=points,
+            timestamp=datetime.now(),
+            expiry_date=expiry_date
+        )
         
-        result = violations_collection.insert_one(new_event)
-        new_event["_id"] = str(result.inserted_id)
+        db.add(new_violation)
+        db.commit()
+        db.refresh(new_violation)
 
-        # --- NEW: AI EMAIL GENERATION ---
-        # Fetch driver email to include in data (defaults to unknown if missing)
-        driver_email = driver.get("email", "unknown@email.com")
+        # --- AI EMAIL GENERATION ---
+        driver_email = driver.email
         
         # Call the AI Service
         ai_email_text = generate_violation_email(
-            driver_name=driver["name"],
+            driver_name=driver.name,
             driver_email=driver_email,
             plate_no=plate_no,
             violation_label=rule["label"],
@@ -96,10 +156,8 @@ class PenaltyService:
         )
 
         # Save the generated email back to the database violation record
-        violations_collection.update_one(
-            {"_id": result.inserted_id},
-            {"$set": {"generated_email": ai_email_text}}
-        )
+        new_violation.generated_email = ai_email_text
+        db.commit()
         
         # Calculate penalty split (Government 60%, Reward 25%, System 15%)
         penalty_amount = points * 500  # Base penalty calculation (500 LKR per point)
@@ -110,28 +168,34 @@ class PenaltyService:
             "total": round(penalty_amount, 2)
         }
         
-        # Add to return object so frontend sees it immediately
-        new_event["generated_email"] = ai_email_text
-        new_event["driver_email"] = driver_email
-        new_event["penalty_split"] = penalty_split
-        
-        return new_event
+        # Return violation data for frontend
+        return {
+            "id": new_violation.id,
+            "plate_no": new_violation.plate_no,
+            "type": new_violation.type,
+            "label": new_violation.label,
+            "weight": new_violation.weight,
+            "multiplier": new_violation.multiplier,
+            "points": new_violation.points,
+            "timestamp": new_violation.timestamp.isoformat(),
+            "expiry_date": new_violation.expiry_date.isoformat(),
+            "generated_email": ai_email_text,
+            "driver_email": driver_email,
+            "penalty_split": penalty_split
+        }
 
-    # --- C. GET PROFILE ---
-    def get_full_profile(self, plate_no: str):
-        driver = drivers_collection.find_one({"plate_no": plate_no})
+    # --- D. GET PROFILE ---
+    def get_full_profile(self, db: Session, plate_no: str):
+        # Get driver
+        driver = db.query(Driver).filter(Driver.plate_no == plate_no).first()
         if not driver:
             return None
         
-        driver["_id"] = str(driver["_id"])
-
         # Get violations
-        cursor = violations_collection.find({"plate_no": plate_no})
-        my_violations = list(cursor)
+        my_violations = db.query(Violation).filter(Violation.plate_no == plate_no).all()
         
         # Get rewards (dashcam submissions)
-        rewards_cursor = rewards_collection.find({"plate_no": plate_no})
-        my_rewards = list(rewards_cursor)
+        my_rewards = db.query(Reward).filter(Reward.plate_no == plate_no).all()
         
         now = datetime.now()
         active_points = 0
@@ -139,32 +203,52 @@ class PenaltyService:
         penalty_timeline = {}
         type_counts = {}
 
+        # Process violations
+        violations_list = []
         for v in my_violations:
-            v["_id"] = str(v["_id"])
+            violations_list.append({
+                "id": v.id,
+                "plate_no": v.plate_no,
+                "type": v.type,
+                "label": v.label,
+                "weight": v.weight,
+                "multiplier": v.multiplier,
+                "points": v.points,
+                "timestamp": v.timestamp.isoformat(),
+                "expiry_date": v.expiry_date.isoformat()
+            })
             
-            month_key = v["timestamp"].strftime("%Y-%m")
+            month_key = v.timestamp.strftime("%Y-%m")
             penalty_timeline[month_key] = penalty_timeline.get(month_key, 0) + 1
-            type_counts[v["label"]] = type_counts.get(v["label"], 0) + 1
+            type_counts[v.label] = type_counts.get(v.label, 0) + 1
 
-            if v["expiry_date"] > now:
-                active_points += v["points"]
+            if v.expiry_date > now:
+                active_points += v.points
             else:
-                expired_points += v["points"]
+                expired_points += v.points
 
         # Process rewards data
         total_rewards = 0
         reward_timeline = {}
         reward_type_counts = {}
+        rewards_list = []
         
         for r in my_rewards:
-            r["_id"] = str(r["_id"])
-            total_rewards += r.get("amount", 0)
+            rewards_list.append({
+                "id": r.id,
+                "plate_no": r.plate_no,
+                "violation_reported": r.violation_reported,
+                "amount": r.amount,
+                "timestamp": r.timestamp.isoformat(),
+                "status": r.status
+            })
             
-            month_key = r["timestamp"].strftime("%Y-%m")
+            total_rewards += r.amount
+            
+            month_key = r.timestamp.strftime("%Y-%m")
             reward_timeline[month_key] = reward_timeline.get(month_key, 0) + 1
             
-            reward_type = r.get("violation_reported", "Other")
-            reward_type_counts[reward_type] = reward_type_counts.get(reward_type, 0) + 1
+            reward_type_counts[r.violation_reported] = reward_type_counts.get(r.violation_reported, 0) + 1
 
         risk = "Low"
         if active_points > 10: risk = "Moderate"
@@ -178,7 +262,16 @@ class PenaltyService:
         if len(my_rewards) >= 30: contributor_level = "Platinum"
 
         return {
-            "profile": driver,
+            "profile": {
+                "id": driver.id,
+                "plate_no": driver.plate_no,
+                "name": driver.name,
+                "email": driver.email,
+                "vehicle_type": driver.vehicle_type,
+                "registered_at": driver.registered_at.isoformat(),
+                "contributor_level": contributor_level,
+                "upload_count": driver.upload_count
+            },
             "stats": {
                 "active_points": round(active_points, 2),
                 "expired_points": round(expired_points, 2),
@@ -195,6 +288,6 @@ class PenaltyService:
                 "reward_types": [{"type": k, "count": v} for k, v in reward_type_counts.items()],
                 "points_split": [active_points, expired_points]
             },
-            "recent_violations": my_violations[-5:],
-            "recent_rewards": my_rewards[-5:]
+            "recent_violations": violations_list[-5:],
+            "recent_rewards": rewards_list[-5:]
         }

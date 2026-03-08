@@ -34,52 +34,149 @@ const RegisterForm = ({ onRegisterSuccess }) => {
     };
 
     return (
-        <div style={{ background: '#2c3e50', padding: '20px', borderRadius: '8px', color: 'white', boxShadow: '0 4px 6px rgba(0,0,0,0.3)', border: '1px solid #34495e' }}>
-            <div style={{ borderBottom: '1px solid #7f8c8d', marginBottom: '15px', paddingBottom: '10px' }}>
-                <h3 style={{ margin: 0, color: '#ecf0f1' }}>📝 New Vehicle Registration</h3>
-            </div>
-            
-            <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
-                <input 
-                    placeholder="Plate No (e.g. WP CAB-1234)" 
-                    value={formData.plate_no}
-                    onChange={(e) => setFormData({...formData, plate_no: e.target.value})}
-                    required
-                    style={{ padding: '10px', borderRadius: '4px', border: 'none' }}
-                />
-                <input 
-                    placeholder="Owner Name" 
-                    value={formData.owner_name}
-                    onChange={(e) => setFormData({...formData, owner_name: e.target.value})}
-                    required
-                    style={{ padding: '10px', borderRadius: '4px', border: 'none' }}
-                />
-                
-                {/* NEW EMAIL FIELD */}
-                <input 
-                    type="email"
-                    placeholder="Owner Email (e.g. driver@gmail.com)" 
-                    value={formData.email}
-                    onChange={(e) => setFormData({...formData, email: e.target.value})}
-                    required
-                    style={{ padding: '10px', borderRadius: '4px', border: 'none' }}
-                />
-                
-                <select 
-                    value={formData.vehicle_type}
-                    onChange={(e) => setFormData({...formData, vehicle_type: e.target.value})}
-                    style={{ padding: '10px', borderRadius: '4px', border: 'none', background: '#ecf0f1', color: '#2c3e50' }}
-                >
-                    {VEHICLE_TYPES.map(type => (
-                        <option key={type} value={type}>{type}</option>
-                    ))}
-                </select>
+        <div style={{ color: 'white' }}>
+            <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                <div>
+                    <label style={{ display: 'block', marginBottom: '8px', fontSize: '13px', color: '#7d8590', fontWeight: '600' }}>
+                        VEHICLE PLATE NUMBER *
+                    </label>
+                    <input 
+                        placeholder="e.g. WP CAB-1234" 
+                        value={formData.plate_no}
+                        onChange={(e) => setFormData({...formData, plate_no: e.target.value})}
+                        required
+                        style={{ 
+                            width: '100%',
+                            padding: '12px',
+                            borderRadius: '8px',
+                            border: '1px solid #30363d',
+                            background: '#0d1117',
+                            color: '#fff',
+                            fontSize: '14px',
+                            outline: 'none',
+                            transition: 'border-color 0.2s',
+                            boxSizing: 'border-box'
+                        }}
+                        onFocus={(e) => e.target.style.borderColor = '#238636'}
+                        onBlur={(e) => e.target.style.borderColor = '#30363d'}
+                    />
+                </div>
 
-                <button type="submit" style={{ background: '#27ae60', color: 'white', border: 'none', padding: '12px', borderRadius: '4px', fontWeight: 'bold', cursor: 'pointer' }}>
+                <div>
+                    <label style={{ display: 'block', marginBottom: '8px', fontSize: '13px', color: '#7d8590', fontWeight: '600' }}>
+                        OWNER NAME *
+                    </label>
+                    <input 
+                        placeholder="Full Name" 
+                        value={formData.owner_name}
+                        onChange={(e) => setFormData({...formData, owner_name: e.target.value})}
+                        required
+                        style={{ 
+                            width: '100%',
+                            padding: '12px',
+                            borderRadius: '8px',
+                            border: '1px solid #30363d',
+                            background: '#0d1117',
+                            color: '#fff',
+                            fontSize: '14px',
+                            outline: 'none',
+                            transition: 'border-color 0.2s',
+                            boxSizing: 'border-box'
+                        }}
+                        onFocus={(e) => e.target.style.borderColor = '#238636'}
+                        onBlur={(e) => e.target.style.borderColor = '#30363d'}
+                    />
+                </div>
+                
+                <div>
+                    <label style={{ display: 'block', marginBottom: '8px', fontSize: '13px', color: '#7d8590', fontWeight: '600' }}>
+                        OWNER EMAIL *
+                    </label>
+                    <input 
+                        type="email"
+                        placeholder="driver@example.com" 
+                        value={formData.email}
+                        onChange={(e) => setFormData({...formData, email: e.target.value})}
+                        required
+                        style={{ 
+                            width: '100%',
+                            padding: '12px',
+                            borderRadius: '8px',
+                            border: '1px solid #30363d',
+                            background: '#0d1117',
+                            color: '#fff',
+                            fontSize: '14px',
+                            outline: 'none',
+                            transition: 'border-color 0.2s',
+                            boxSizing: 'border-box'
+                        }}
+                        onFocus={(e) => e.target.style.borderColor = '#238636'}
+                        onBlur={(e) => e.target.style.borderColor = '#30363d'}
+                    />
+                </div>
+                
+                <div>
+                    <label style={{ display: 'block', marginBottom: '8px', fontSize: '13px', color: '#7d8590', fontWeight: '600' }}>
+                        VEHICLE TYPE *
+                    </label>
+                    <select 
+                        value={formData.vehicle_type}
+                        onChange={(e) => setFormData({...formData, vehicle_type: e.target.value})}
+                        style={{ 
+                            width: '100%',
+                            padding: '12px',
+                            borderRadius: '8px',
+                            border: '1px solid #30363d',
+                            background: '#0d1117',
+                            color: '#fff',
+                            fontSize: '14px',
+                            outline: 'none',
+                            cursor: 'pointer',
+                            boxSizing: 'border-box'
+                        }}
+                    >
+                        {VEHICLE_TYPES.map(type => (
+                            <option key={type} value={type} style={{ background: '#161b22' }}>{type}</option>
+                        ))}
+                    </select>
+                </div>
+
+                <button 
+                    type="submit" 
+                    style={{ 
+                        background: 'linear-gradient(180deg, #2ea043 0%, #238636 100%)',
+                        color: 'white',
+                        border: 'none',
+                        padding: '14px',
+                        borderRadius: '8px',
+                        fontWeight: '600',
+                        fontSize: '14px',
+                        cursor: 'pointer',
+                        marginTop: '10px',
+                        transition: 'transform 0.2s',
+                        boxShadow: '0 2px 8px rgba(35, 134, 54, 0.3)'
+                    }}
+                    onMouseEnter={(e) => e.target.style.transform = 'translateY(-2px)'}
+                    onMouseLeave={(e) => e.target.style.transform = 'translateY(0)'}
+                >
                     REGISTER VEHICLE
                 </button>
             </form>
-            {msg && <p style={{ marginTop: '10px', textAlign: 'center', color: isSuccess ? '#4cd137' : '#e74c3c', fontWeight: 'bold' }}>{msg}</p>}
+            {msg && (
+                <div style={{ 
+                    marginTop: '20px',
+                    padding: '12px',
+                    borderRadius: '8px',
+                    textAlign: 'center',
+                    background: isSuccess ? 'rgba(35, 134, 54, 0.15)' : 'rgba(248, 81, 73, 0.15)',
+                    border: `1px solid ${isSuccess ? '#238636' : '#f85149'}`,
+                    color: isSuccess ? '#3fb950' : '#f85149',
+                    fontWeight: '500',
+                    fontSize: '14px'
+                }}>
+                    {msg}
+                </div>
+            )}
         </div>
     );
 };

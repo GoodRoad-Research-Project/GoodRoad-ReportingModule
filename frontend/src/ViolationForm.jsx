@@ -2,16 +2,36 @@ import React, { useState, useEffect } from 'react';
 import emailjs from '@emailjs/browser';
 
 const VIOLATION_TYPES = [
-    { code: "RED_LIGHT", label: "Red Light Violation (Medium)" },
-    { code: "WHITE_LINE", label: "Crossing White Line (Medium)" },
-    { code: "WRONG_OVERTAKE", label: "Wrong Side Overtake (High)" },
-    { code: "PEDESTRIAN", label: "Pedestrian Crossing (High)" },
-    { code: "MOTO_OVERLOAD", label: "Motorcycle Overload (Medium)" },
-    { code: "NO_HELMET", label: "No Helmet (High)" },
-    { code: "3WHEEL_OVERLOAD", label: "Three-Wheel Overload (Medium)" },
-    { code: "NO_SIGNAL", label: "No Turn Signal (Low)" },
-    { code: "RAILWAY", label: "Railway Violation (High)" },
-    { code: "OBSTRUCTION", label: "Traffic Obstruction (Low)" }
+    { code: "OVER_SPEED", label: "Speeding" },
+    { code: "NO_LICENSE", label: "No Driving License" },
+    { code: "NO_INSURANCE", label: "No Insurance" },
+    { code: "NO_REVENUE_LIC", label: "No Revenue License" },
+    { code: "UNDERAGE_DRIVE", label: "Underage Driving" },
+    { code: "RECKLESS_DRIVING", label: "Reckless Driving" },
+    { code: "CARELESS_DRIVING", label: "Careless Driving" },
+    { code: "MOBILE_PHONE", label: "Mobile Phone Use" },
+    { code: "LEFT_OVERTAKE", label: "Left Overtake" },
+    { code: "NO_SEATBELT", label: "No Seatbelt" },
+    { code: "NO_HELMET", label: "No Helmet" },
+    { code: "RED_LIGHT", label: "Red Light Violation" },
+    { code: "DISOBEY_POLICE", label: "Disobey Police" },
+    { code: "DISOBEY_SIGNS", label: "Disobey Road Signs" },
+    { code: "WHITE_LINE", label: "White Line Crossing" },
+    { code: "WRONG_PARKING", label: "Illegal Parking" },
+    { code: "PEDESTRIAN_CROSS", label: "Pedestrian Crossing" },
+    { code: "ONE_WAY", label: "Wrong Way (One Way)" },
+    { code: "RAILWAY_CROSS", label: "Railway Crossing" },
+    { code: "OVERLOAD_PASS", label: "Excess Passengers" },
+    { code: "DANGEROUS_LOAD", label: "Dangerous Load" },
+    { code: "EMISSION_FAIL", label: "Emission Violation" },
+    { code: "SHRILL_HORN", label: "Illegal Horn" },
+    { code: "DEFECTIVE_LIGHTS", label: "Defective Lights" },
+    { code: "UNFIT_VEHICLE", label: "Unfit Vehicle" },
+    { code: "OBSCURED_PLATES", label: "Obscured Number Plates" },
+    { code: "ROAD_OBSTRUCT", label: "Road Obstruction" },
+    { code: "ILLEGAL_REVERSE", label: "Illegal Reversing" },
+    { code: "NO_FITNESS_CERT", label: "No Fitness Cert (Commercial)" },
+    { code: "BLOCK_EMERGENCY", label: "Blocking Emergency Vehicle" }
 ];
 
 const ViolationForm = ({ activePlate, onViolationAdded }) => {
@@ -134,38 +154,72 @@ const ViolationForm = ({ activePlate, onViolationAdded }) => {
     };
 
     return (
-        <div style={{ background: '#2c3e50', padding: '20px', borderRadius: '8px', color: 'white', border: '1px solid #34495e', boxShadow: '0 4px 6px rgba(0,0,0,0.3)' }}>
-            <div style={{ display: 'flex', alignItems: 'center', marginBottom: '15px', borderBottom: '1px solid #7f8c8d', paddingBottom: '10px' }}>
-                <span style={{ fontSize: '20px', marginRight: '10px' }}>👮</span>
-                <h4 style={{ margin: 0, fontWeight: '600', color: '#ecf0f1' }}>ENFORCEMENT ENTRY</h4>
-            </div>
-
-            <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
-                <div style={{ background: '#34495e', padding: '10px', borderRadius: '4px', fontSize: '14px' }}>
-                    <div style={{ color: '#bdc3c7', marginBottom: '5px' }}>Target Vehicle:</div>
+        <div style={{ color: 'white' }}>
+            <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                <div>
+                    <label style={{ display: 'block', marginBottom: '8px', fontSize: '13px', color: '#7d8590', fontWeight: '600' }}>
+                        TARGET VEHICLE PLATE *
+                    </label>
                     {activePlate ? (
-                        <strong style={{ color: '#f1c40f', fontSize: '16px' }}>{activePlate}</strong>
+                        <div style={{ 
+                            padding: '12px',
+                            borderRadius: '8px',
+                            border: '2px solid #da3633',
+                            background: 'rgba(218, 54, 51, 0.1)',
+                            color: '#da3633',
+                            fontSize: '18px',
+                            fontWeight: 'bold',
+                            textAlign: 'center'
+                        }}>
+                            {activePlate}
+                        </div>
                     ) : (
                         <input 
-                            placeholder="Type Plate No (e.g. WP-9999)"
+                            placeholder="e.g. WP-9999"
                             value={plate}
                             onChange={(e) => setPlate(e.target.value)}
                             disabled={isSubmitting} 
-                            style={{ width: '90%', padding: '8px', borderRadius: '4px', border: '1px solid #7f8c8d', background: '#ecf0f1', color: '#2c3e50', fontWeight: 'bold' }}
+                            style={{ 
+                                width: '100%',
+                                padding: '12px',
+                                borderRadius: '8px',
+                                border: '1px solid #30363d',
+                                background: '#0d1117',
+                                color: '#fff',
+                                fontSize: '14px',
+                                outline: 'none',
+                                transition: 'border-color 0.2s',
+                                boxSizing: 'border-box'
+                            }}
+                            onFocus={(e) => e.target.style.borderColor = '#da3633'}
+                            onBlur={(e) => e.target.style.borderColor = '#30363d'}
                         />
                     )}
                 </div>
 
                 <div>
-                    <label style={{ display: 'block', fontSize: '12px', color: '#bdc3c7', marginBottom: '5px' }}>SELECT VIOLATION TYPE</label>
+                    <label style={{ display: 'block', marginBottom: '8px', fontSize: '13px', color: '#7d8590', fontWeight: '600' }}>
+                        VIOLATION TYPE *
+                    </label>
                     <select 
                         value={type} 
                         onChange={(e) => setType(e.target.value)}
                         disabled={isSubmitting} 
-                        style={{ width: '100%', padding: '10px', background: '#ecf0f1', color: '#2c3e50', border: 'none', borderRadius: '4px', fontWeight: 'bold' }}
+                        style={{ 
+                            width: '100%',
+                            padding: '12px',
+                            borderRadius: '8px',
+                            border: '1px solid #30363d',
+                            background: '#0d1117',
+                            color: '#fff',
+                            fontSize: '14px',
+                            outline: 'none',
+                            cursor: 'pointer',
+                            boxSizing: 'border-box'
+                        }}
                     >
                         {VIOLATION_TYPES.map(v => (
-                            <option key={v.code} value={v.code}>{v.label}</option>
+                            <option key={v.code} value={v.code} style={{ background: '#161b22' }}>{v.label}</option>
                         ))}
                     </select>
                 </div>
@@ -174,80 +228,97 @@ const ViolationForm = ({ activePlate, onViolationAdded }) => {
                     type="submit" 
                     disabled={!plate || isSubmitting} 
                     style={{ 
-                        padding: '12px', 
-                        background: isSubmitting ? '#7f8c8d' : (plate ? '#c0392b' : '#95a5a6'), 
-                        color: 'white', 
-                        border: 'none', 
-                        borderRadius: '4px',
+                        background: isSubmitting ? '#6e7681' : (plate ? 'linear-gradient(180deg, #e34c26 0%, #da3633 100%)' : '#6e7681'),
+                        color: 'white',
+                        border: 'none',
+                        padding: '14px',
+                        borderRadius: '8px',
+                        fontWeight: '600',
+                        fontSize: '14px',
                         cursor: (plate && !isSubmitting) ? 'pointer' : 'not-allowed',
-                        fontWeight: 'bold',
-                        letterSpacing: '1px',
-                        transition: 'background 0.3s'
+                        marginTop: '10px',
+                        transition: 'all 0.2s',
+                        boxShadow: plate && !isSubmitting ? '0 2px 8px rgba(218, 54, 51, 0.3)' : 'none',
+                        opacity: (plate && !isSubmitting) ? 1 : 0.6
                     }}
+                    onMouseEnter={(e) => { if(plate && !isSubmitting) e.target.style.transform = 'translateY(-2px)'; }}
+                    onMouseLeave={(e) => { if(plate && !isSubmitting) e.target.style.transform = 'translateY(0)'; }}
                 >
-                    {isSubmitting ? "PROCESSING AI..." : "SUBMIT VIOLATION REPORT"}
+                    {isSubmitting ? "⏳ PROCESSING AI..." : "SUBMIT VIOLATION REPORT"}
                 </button>
             </form>
 
             {msg && (
-                <div style={{ marginTop: '15px', padding: '10px', background: isSuccess ? '#27ae60' : (isSubmitting ? '#f39c12' : '#c0392b'), color: 'white', fontSize: '13px', borderRadius: '4px', fontWeight: 'bold', textAlign: 'center' }}>
+                <div style={{ 
+                    marginTop: '20px',
+                    padding: '12px',
+                    borderRadius: '8px',
+                    textAlign: 'center',
+                    background: isSuccess ? 'rgba(35, 134, 54, 0.15)' : (isSubmitting ? 'rgba(187, 128, 9, 0.15)' : 'rgba(248, 81, 73, 0.15)'),
+                    border: `1px solid ${isSuccess ? '#238636' : (isSubmitting ? '#bb8009' : '#f85149')}`,
+                    color: isSuccess ? '#3fb950' : (isSubmitting ? '#e3b341' : '#f85149'),
+                    fontWeight: '500',
+                    fontSize: '14px'
+                }}>
                     {msg}
                 </div>
             )}
 
             {/* Penalty Split Display */}
             {penaltySplit && isSuccess && (
-                <div style={{ marginTop: '20px', background: '#34495e', padding: '15px', borderRadius: '8px' }}>
-                    <h5 style={{ margin: '0 0 15px 0', color: '#ecf0f1', borderBottom: '1px solid #7f8c8d', paddingBottom: '10px' }}>💰 Penalty Distribution (LKR {penaltySplit.total})</h5>
+                <div style={{ marginTop: '25px', background: '#0d1117', padding: '20px', borderRadius: '8px', border: '1px solid #30363d' }}>
+                    <h5 style={{ margin: '0 0 15px 0', color: '#e3b341', fontSize: '14px', fontWeight: '600', borderBottom: '1px solid #30363d', paddingBottom: '10px' }}>
+                        💰 PENALTY DISTRIBUTION • LKR {penaltySplit.total}
+                    </h5>
                     
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#2980b9', padding: '10px', borderRadius: '4px' }}>
-                            <span>🏛️ Government (60%)</span>
-                            <strong>LKR {penaltySplit.government}</strong>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(59, 130, 246, 0.1)', padding: '12px', borderRadius: '6px', border: '1px solid rgba(59, 130, 246, 0.3)' }}>
+                            <span style={{ fontSize: '13px', color: '#7d8590' }}>🏛️ Government (60%)</span>
+                            <strong style={{ color: '#58a6ff' }}>LKR {penaltySplit.government}</strong>
                         </div>
                         
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#27ae60', padding: '10px', borderRadius: '4px' }}>
-                            <span>🎁 Reward Pool (25%)</span>
-                            <strong>LKR {penaltySplit.reward}</strong>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(35, 134, 54, 0.1)', padding: '12px', borderRadius: '6px', border: '1px solid rgba(35, 134, 54, 0.3)' }}>
+                            <span style={{ fontSize: '13px', color: '#7d8590' }}>🎁 Reward Pool (25%)</span>
+                            <strong style={{ color: '#3fb950' }}>LKR {penaltySplit.reward}</strong>
                         </div>
                         
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#8e44ad', padding: '10px', borderRadius: '4px' }}>
-                            <span>⚙️ System (15%)</span>
-                            <strong>LKR {penaltySplit.system}</strong>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(163, 113, 247, 0.1)', padding: '12px', borderRadius: '6px', border: '1px solid rgba(163, 113, 247, 0.3)' }}>
+                            <span style={{ fontSize: '13px', color: '#7d8590' }}>⚙️ System (15%)</span>
+                            <strong style={{ color: '#a371f7' }}>LKR {penaltySplit.system}</strong>
                         </div>
                     </div>
                     
-                    <p style={{ fontSize: '11px', color: '#bdc3c7', marginTop: '10px', textAlign: 'center' }}>
-                        Penalty collected supports road safety initiatives
+                    <p style={{ fontSize: '11px', color: '#7d8590', marginTop: '15px', textAlign: 'center', lineHeight: '1.5' }}>
+                        Penalty revenue supports road safety initiatives
                     </p>
                 </div>
             )}
 
-            {/* Email Status Popup */}
+            {/* Email Status */}
             {emailStatus && (
                 <div style={{ 
-                    marginTop: '15px', 
-                    padding: '15px', 
-                    background: emailStatus.success ? '#27ae60' : '#e74c3c', 
+                    marginTop: '20px',
+                    padding: '16px',
+                    background: emailStatus.success ? 'rgba(35, 134, 54, 0.15)' : 'rgba(248, 81, 73, 0.15)',
                     borderRadius: '8px',
-                    border: emailStatus.success ? '2px solid #2ecc71' : '2px solid #c0392b'
+                    border: `1px solid ${emailStatus.success ? '#238636' : '#f85149'}`
                 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                         <span style={{ fontSize: '24px' }}>{emailStatus.success ? '📧✅' : '📧❌'}</span>
-                        <div>
-                            <div style={{ fontWeight: 'bold', fontSize: '14px' }}>
+                        <div style={{ flex: 1 }}>
+                            <div style={{ fontWeight: '600', fontSize: '13px', color: emailStatus.success ? '#3fb950' : '#f85149', marginBottom: '4px' }}>
                                 {emailStatus.success ? 'EMAIL SENT SUCCESSFULLY!' : 'EMAIL SENDING FAILED'}
                             </div>
-                            <div style={{ fontSize: '12px', marginTop: '5px', opacity: 0.9 }}>
+                            <div style={{ fontSize: '12px', color: '#7d8590' }}>
                                 {emailStatus.message}
                             </div>
                         </div>
                     </div>
                     {emailStatus.success && violationData && (
-                        <div style={{ marginTop: '10px', padding: '10px', background: 'rgba(0,0,0,0.2)', borderRadius: '4px', fontSize: '12px' }}>
-                            <div><strong>To:</strong> {violationData.driver_email}</div>
-                            <div><strong>Subject:</strong> Traffic Violation Notice - {violationData.label}</div>
-                            <div><strong>Status:</strong> Delivered ✓</div>
+                        <div style={{ marginTop: '12px', padding: '12px', background: 'rgba(0,0,0,0.3)', borderRadius: '6px', fontSize: '11px', color: '#7d8590' }}>
+                            <div style={{ marginBottom: '4px' }}><strong style={{ color: '#8b949e' }}>To:</strong> {violationData.driver_email}</div>
+                            <div style={{ marginBottom: '4px' }}><strong style={{ color: '#8b949e' }}>Subject:</strong> Traffic Violation Notice - {violationData.label}</div>
+                            <div><strong style={{ color: '#8b949e' }}>Status:</strong> <span style={{ color: '#3fb950' }}>Delivered ✓</span></div>
                         </div>
                     )}
                 </div>

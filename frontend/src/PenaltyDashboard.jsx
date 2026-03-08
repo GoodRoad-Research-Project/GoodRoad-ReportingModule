@@ -3,10 +3,13 @@ import React, { useState } from 'react';
 import { Bar, Pie, Doughnut } from 'react-chartjs-2';
 import 'chart.js/auto'; 
 import ViolationForm from './ViolationForm';
+import RegisterForm from './RegisterForm';
+import DeleteForm from './DeleteForm';
 
 const PenaltyDashboard = () => {
     // STATE: Controls which view we are seeing
     const [viewMode, setViewMode] = useState('ENFORCEMENT'); // 'ENFORCEMENT' or 'PROFILE'
+    const [activeTab, setActiveTab] = useState('register'); // 'register', 'violation', 'delete'
     const [sidebarOpen, setSidebarOpen] = useState(true);
     
     const [searchPlate, setSearchPlate] = useState('');
@@ -60,6 +63,23 @@ const PenaltyDashboard = () => {
     };
 
     return (
+        <>
+        <style>{`
+            @keyframes fadeIn {
+                from { opacity: 0; }
+                to { opacity: 1; }
+            }
+            @keyframes slideIn {
+                from { 
+                    opacity: 0;
+                    transform: translateY(20px);
+                }
+                to { 
+                    opacity: 1;
+                    transform: translateY(0);
+                }
+            }
+        `}</style>
         <div style={{ fontFamily: 'Arial', background: '#0d1117', minHeight: '100vh', color: '#fff', display: 'flex' }}>
             
             {/* SIDEBAR */}
@@ -232,11 +252,192 @@ const PenaltyDashboard = () => {
                     {/* --- VIEW 1: ENFORCEMENT --- */}
                     {viewMode === 'ENFORCEMENT' && (
                         <div style={{ animation: 'fadeIn 0.5s' }}>
-                            <div style={{ display: 'flex', justifyContent: 'center', gap: '40px', flexWrap: 'wrap' }}>
-                                {/* Violation Entry Form */}
-                                <div style={{ flex: '1', maxWidth: '550px' }}>
-                                    <ViolationForm activePlate={null} /> 
-                                </div>
+                            {/* Modern Tab Navigation */}
+                            <div style={{ 
+                                background: '#161b22', 
+                                borderRadius: '12px', 
+                                padding: '8px',
+                                display: 'inline-flex',
+                                gap: '8px',
+                                marginBottom: '30px',
+                                border: '1px solid #30363d'
+                            }}>
+                                <button 
+                                    onClick={() => setActiveTab('register')}
+                                    style={{ 
+                                        padding: '12px 24px',
+                                        background: activeTab === 'register' ? '#238636' : 'transparent',
+                                        color: activeTab === 'register' ? '#fff' : '#7d8590',
+                                        border: 'none',
+                                        borderRadius: '8px',
+                                        cursor: 'pointer',
+                                        fontSize: '14px',
+                                        fontWeight: '600',
+                                        transition: 'all 0.3s',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: '8px'
+                                    }}
+                                >
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                        <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                                        <circle cx="8.5" cy="7" r="4"/>
+                                        <line x1="20" y1="8" x2="20" y2="14"/>
+                                        <line x1="23" y1="11" x2="17" y2="11"/>
+                                    </svg>
+                                    Register Vehicle
+                                </button>
+                                <button 
+                                    onClick={() => setActiveTab('violation')}
+                                    style={{ 
+                                        padding: '12px 24px',
+                                        background: activeTab === 'violation' ? '#da3633' : 'transparent',
+                                        color: activeTab === 'violation' ? '#fff' : '#7d8590',
+                                        border: 'none',
+                                        borderRadius: '8px',
+                                        cursor: 'pointer',
+                                        fontSize: '14px',
+                                        fontWeight: '600',
+                                        transition: 'all 0.3s',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: '8px'
+                                    }}
+                                >
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                        <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+                                        <line x1="12" y1="9" x2="12" y2="13"/>
+                                        <line x1="12" y1="17" x2="12.01" y2="17"/>
+                                    </svg>
+                                    Add Violation
+                                </button>
+                                <button 
+                                    onClick={() => setActiveTab('delete')}
+                                    style={{ 
+                                        padding: '12px 24px',
+                                        background: activeTab === 'delete' ? '#f85149' : 'transparent',
+                                        color: activeTab === 'delete' ? '#fff' : '#7d8590',
+                                        border: 'none',
+                                        borderRadius: '8px',
+                                        cursor: 'pointer',
+                                        fontSize: '14px',
+                                        fontWeight: '600',
+                                        transition: 'all 0.3s',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: '8px'
+                                    }}
+                                >
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                        <polyline points="3 6 5 6 21 6"/>
+                                        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                                        <line x1="10" y1="11" x2="10" y2="17"/>
+                                        <line x1="14" y1="11" x2="14" y2="17"/>
+                                    </svg>
+                                    Delete Vehicle
+                                </button>
+                            </div>
+
+                            {/* Tab Content */}
+                            <div style={{ 
+                                background: '#161b22',
+                                borderRadius: '12px',
+                                padding: '40px',
+                                border: '1px solid #30363d',
+                                maxWidth: '800px',
+                                margin: '0 auto',
+                                boxShadow: '0 8px 24px rgba(0,0,0,0.4)'
+                            }}>
+                                {activeTab === 'register' && (
+                                    <div style={{ animation: 'slideIn 0.3s ease-out' }}>
+                                        <div style={{ textAlign: 'center', marginBottom: '30px' }}>
+                                            <div style={{ 
+                                                display: 'inline-flex',
+                                                alignItems: 'center',
+                                                justifyContent: 'center',
+                                                width: '60px',
+                                                height: '60px',
+                                                background: 'rgba(35, 134, 54, 0.1)',
+                                                borderRadius: '50%',
+                                                marginBottom: '15px'
+                                            }}>
+                                                <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#238636" strokeWidth="2">
+                                                    <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                                                    <circle cx="8.5" cy="7" r="4"/>
+                                                    <line x1="20" y1="8" x2="20" y2="14"/>
+                                                    <line x1="23" y1="11" x2="17" y2="11"/>
+                                                </svg>
+                                            </div>
+                                            <h2 style={{ margin: '0 0 8px 0', fontSize: '28px', color: '#fff' }}>Register New Vehicle</h2>
+                                            <p style={{ margin: 0, color: '#7d8590', fontSize: '14px' }}>
+                                                Add a new vehicle to the GoodRoad tracking system
+                                            </p>
+                                        </div>
+                                        <RegisterForm onRegisterSuccess={(plate) => {
+                                            console.log('Vehicle registered:', plate);
+                                            setTimeout(() => setActiveTab('violation'), 1500);
+                                        }} />
+                                    </div>
+                                )}
+
+                                {activeTab === 'violation' && (
+                                    <div style={{ animation: 'slideIn 0.3s ease-out' }}>
+                                        <div style={{ textAlign: 'center', marginBottom: '30px' }}>
+                                            <div style={{ 
+                                                display: 'inline-flex',
+                                                alignItems: 'center',
+                                                justifyContent: 'center',
+                                                width: '60px',
+                                                height: '60px',
+                                                background: 'rgba(218, 54, 51, 0.1)',
+                                                borderRadius: '50%',
+                                                marginBottom: '15px'
+                                            }}>
+                                                <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#da3633" strokeWidth="2">
+                                                    <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+                                                    <line x1="12" y1="9" x2="12" y2="13"/>
+                                                    <line x1="12" y1="17" x2="12.01" y2="17"/>
+                                                </svg>
+                                            </div>
+                                            <h2 style={{ margin: '0 0 8px 0', fontSize: '28px', color: '#fff' }}>Report Traffic Violation</h2>
+                                            <p style={{ margin: 0, color: '#7d8590', fontSize: '14px' }}>
+                                                Record a violation and automatically notify the vehicle owner
+                                            </p>
+                                        </div>
+                                        <ViolationForm activePlate={null} /> 
+                                    </div>
+                                )}
+
+                                {activeTab === 'delete' && (
+                                    <div style={{ animation: 'slideIn 0.3s ease-out' }}>
+                                        <div style={{ textAlign: 'center', marginBottom: '30px' }}>
+                                            <div style={{ 
+                                                display: 'inline-flex',
+                                                alignItems: 'center',
+                                                justifyContent: 'center',
+                                                width: '60px',
+                                                height: '60px',
+                                                background: 'rgba(248, 81, 73, 0.1)',
+                                                borderRadius: '50%',
+                                                marginBottom: '15px'
+                                            }}>
+                                                <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#f85149" strokeWidth="2">
+                                                    <polyline points="3 6 5 6 21 6"/>
+                                                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                                                    <line x1="10" y1="11" x2="10" y2="17"/>
+                                                    <line x1="14" y1="11" x2="14" y2="17"/>
+                                                </svg>
+                                            </div>
+                                            <h2 style={{ margin: '0 0 8px 0', fontSize: '28px', color: '#fff' }}>Remove Vehicle</h2>
+                                            <p style={{ margin: 0, color: '#7d8590', fontSize: '14px' }}>
+                                                Permanently delete a vehicle and all associated records
+                                            </p>
+                                        </div>
+                                        <DeleteForm onDeleteSuccess={(plate) => {
+                                            console.log('Vehicle deleted:', plate);
+                                        }} />
+                                    </div>
+                                )}
                             </div>
                         </div>
                     )}
@@ -450,6 +651,7 @@ const PenaltyDashboard = () => {
                 </div>
             </div>
         </div>
+        </>
     );
 };
 
